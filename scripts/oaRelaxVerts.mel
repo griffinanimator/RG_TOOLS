@@ -1,0 +1,150 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: oaRelaxVerts
+''    Author:  
+''    Last Updated: Jan 26, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/modeling/poly_tools/4499.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+/*
+===========================================================================
+
+<NAME> oaRelaxVerts.mel </NAME>
+<VERSION> v1.1 </VERSION>
+<AUTHORS> Oleg Alexander (olegalexander@gmail.com) </AUTHORS>
+
+<DESCRIPTION>
+
+oaRelaxVerts averages selected vertices, but tries to maintain the original
+shape of the object.
+
+As you know, when creating blend shapes, it's not only the shape that matters,
+but also the distribution of the vertices. The movement of the vertices
+determines the movement of the texture. Achieving an even distribution of
+vertices is difficult with conventional means, such as the Sculpt Geometry
+Smooth tool, because volume is lost. oaRelaxVerts tries to preserve the
+original volume of the shape, often creating beautiful skin sliding effects.
+
+Because oaRelaxVerts is life-changing for blend shape artists, I've convinced
+my employers, Image-Metrics, to allow me to release it to the general public.
+Image-Metrics is a facial animation company with offices in Manchester, England
+and Santa Monica, CA. If you want to see some ground-breaking facial animation,
+visit www.image-metrics.com.
+
+Enjoy!   </DESCRIPTION>
+
+<TO_USE>
+
+Select some polygon vertices. Execute 'oaRelaxVerts'.  </TO_USE>
+
+<HISTORY>
+
+	v1.1 (Friday, January 26, 2007)
+		o Slight error checking
+
+	v1.0 (Wednesday, January 24, 2007)
+		o Original Release </HISTORY>
+
+
+IF YOU ENJOY THIS MEL SCRIPT, PLEASE RATE IT. I WOULD APPRECIATE IT. THANK YOU!
+===========================================================================
+*/
+
+
+
+// Basically, this is two operations: Average vertices and shrink wrap them back
+// to a copy of the original.
+//
+// Oh, and don't try to change the algorithm to use the new transferAttributes
+// command in Maya 8. It's not as accuarate as using the geometryConstraint!
+global proc oaRelaxVerts () {
+
+	//Get selected verts
+	string $verts[] = `ls -fl -sl`;
+	int $numberOfVerts = `size $verts`;
+	if ($numberOfVerts == 0) error "You must select some vertices.";
+	if (`nodeType $verts[0]` != "mesh") error "Select polygon vertices. Or this object has a tweak node? Delete the tweak node first.";
+	
+	//Get the name of the object
+	string $buffer[];
+	$numTokens = `tokenize $verts[0] "." $buffer`;
+	if ($numTokens != 2) error "The selection is not vertices.";
+	string $obj = $buffer[0];
+	
+	//Duplicate the object
+	string $dup[] = `duplicate -n ($obj+"_orig") $obj`;
+	
+	//Average the vertices
+	polyAverageVertex -i 1 -ch 0 $verts;
+
+	//Create snapping locator
+	string $locator[] = `spaceLocator`;
+	
+	//Snap it to the surface. You only need ONE geometry constraint for the whole
+	//operation! That's why xyShrinkWrap doesn't crash and fitMorph does.
+	geometryConstraint $dup[0] $locator[0];
+
+    //Set the abort variable
+    int $aborted = no;
+
+    //Create the progress window
+    progressWindow
+        -title "Relax Progress"
+        -isInterruptable yes
+        -maxValue $numberOfVerts;
+
+	//Snap the verts back to the duplicate
+	for ($vert in $verts) {
+	
+	    //Check if the progress window has been cancelled
+        if (`progressWindow -q -isCancelled`) {
+            $aborted = yes;
+            warning "Relax Verts aborted by user. Please undo the last operation.";
+            break;
+        }
+	
+        //Get world position of the vert
+		float $pos[] = `pointPosition $vert`;
+		
+		//Move the snapping locator to that position, but it's still constrained
+		//to the surface!
+		move $pos[0] $pos[1] $pos[2] $locator[0];
+
+		//Snap the vert to the locator
+		float $pos[] = `pointPosition $locator[0]`;
+		move $pos[0] $pos[1] $pos[2] $vert;
+		
+    	//Update progress window
+		progressWindow -e
+			-status ("Relaxing " + $vert + " of " + $numberOfVerts)
+			-step 1;
+	}
+
+    //Delete the progress window
+    progressWindow -endProgress;
+
+	//Finish up
+	if ($aborted == no) {
+
+		//Clean up
+		delete $dup[0];
+		delete $locator[0];
+	
+		select -r $verts;
+	
+		print "Relaxed vertices successfully!\n";
+	}
+
+}
+//oaRelaxVerts;
+
+
+
+
+
