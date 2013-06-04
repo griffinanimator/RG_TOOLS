@@ -18,6 +18,18 @@ os.environ['Parts_Maya_Icons']  = os.environ['GTOOLS'] + 'RG_Tools/RG_Parts/Part
 if not os.environ['Parts_Maya_Icons'] in sys.path:
 	sys.path.append(os.environ['Parts_Maya_Icons'])
 
+"""
+# Path to animPicker
+os.environ['Anim_Picker']  = 'C:/Users/rgriffin/Documents/GitHub/anim_picker/'
+if not os.environ['Anim_Picker'] in sys.path:
+    sys.path.append(os.environ['Anim_Picker'])
+"""
+
+# Path to MG_Tools
+os.environ['MG_Tools']  = 'C:/Users/rgriffin/Documents/GitHub/RG_ARTTOOLS/MG_Tools/'
+if not os.environ['MG_Tools'] in sys.path:
+    sys.path.append(os.environ['MG_Tools'])
+
 # Load the scripts menu ##########################################################
 print "Loading Script Menu"
 def runScript(item, *args):
@@ -40,6 +52,7 @@ def createMenu(items, *args):
 
 def findAllFiles(fileDirectory, fileExtension):
     # Return a list of all file names, excluding the file extension
+    print fileDirectory
     allFiles = os.listdir(fileDirectory)
     
     # Refine all files, listing only those of the specified file extension
@@ -53,7 +66,7 @@ def findAllFiles(fileDirectory, fileExtension):
     return returnFiles
 
 # Define the path to the scripts
-Script_Path = ( os.environ['GTOOLS'] + '/RG_Tools/scripts')
+Script_Path = ( os.environ['GTOOLS'] + '/scripts')
 
 allScriptFiles = []
 pyFiles = findAllFiles(Script_Path, '.py')
