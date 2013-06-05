@@ -1,9 +1,8 @@
 import os
 import sys
 import maya.cmds as cmds
-print "OK"
-import System.Parts_UI as Parts_UI
-import System.utils as utils
+import RG_Parts.Parts_Maya.System.Parts_UI as Parts_UI
+import RG_Parts.Parts_Maya.System.utils as utils
 
 class Parts_Menu():
 

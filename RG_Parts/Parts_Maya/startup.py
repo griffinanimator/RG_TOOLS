@@ -8,7 +8,7 @@ import maya.mel as mel
 print "Loading my Kickass Tools"
 
 # Add more paths to make it easier to get to tools
-os.environ['Parts_Maya']  = os.environ['GTOOLS'] + 'RG_Tools/RG_Parts/Parts_Maya/'
+os.environ['Parts_Maya']  = os.environ['GTOOLS'] + '//RG_Parts/Parts_Maya/'
 
 if not os.environ['Parts_Maya'] in sys.path:
 	sys.path.append(os.environ['Parts_Maya'])
@@ -84,4 +84,4 @@ print "Done Loading User Scripts"
 
 # Load Setting
 print "Trying to load settings"
-#startup = pm.evalDeferred('import RG_Tools.RG_Parts.Parts_Maya.settings')
+startup = pm.evalDeferred('import RG_Parts.Parts_Maya.settings')
