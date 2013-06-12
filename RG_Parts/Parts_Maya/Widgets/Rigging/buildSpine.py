@@ -1,6 +1,6 @@
 import maya.cmds as cmds
 
-import System.widgetUtils as widget_utils
+import Utils.Utils_Widget as widget_utils
 reload(widget_utils)
 
 CLASS_NAME = "Create_Spine"
