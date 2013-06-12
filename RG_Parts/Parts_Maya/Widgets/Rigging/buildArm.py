@@ -21,6 +21,9 @@ class Create_Arm:
         self.ctrlPath = "C:/Users/Griffy/Google Drive/RG_ARTTOOLS/RG_Parts/Parts_Maya/Controls/"
 
     def install(self, *args):
+        print "Install"
+
+        """
         # Collect layout info
     	lytObs = widget_utils.collectLayoutInfo()
         self.lyt_info['layoutObjs'] = lytObs[0]
@@ -47,7 +50,7 @@ class Create_Arm:
         ikInfo = widget_utils.createStretchyIk(armControl, ikHandleName, pvName, suffix, self.jnt_info['ikJnts'], self.lyt_info['layoutObjs']  )
 
         # Setup the ik foot
-        """
+      
         ikJntPos = []
         for jnt in self.jnt_info['ikJnts']:
             pos = cmds.xform(jnt, q=True, t=True, ws=True)

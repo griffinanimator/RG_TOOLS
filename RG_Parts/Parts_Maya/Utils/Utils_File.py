@@ -1,3 +1,11 @@
+import os
+import sys
+from functools import partial
+import pymel.core as pm
+import maya.cmds as cmds
+import maya.mel as mel
+
+
 def findAllFiles(fileDirectory, fileExtension):
     # Return a list of all file names, excluding the file extension
     allFiles = os.listdir(fileDirectory)

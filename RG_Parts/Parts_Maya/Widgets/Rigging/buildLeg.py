@@ -21,6 +21,10 @@ class Create_Leg:
 
     def install(self, *args):
         # Collect layout info
+        print "Install"
+   
+
+        """
     	lytObs = widget_utils.collectLayoutInfo()
         self.lyt_info['layoutObjs'] = lytObs[0]
         self.lyt_info['layoutRoot'] = lytObs[1]
@@ -240,3 +244,5 @@ class Create_Leg:
         cmds.setAttr(footControl[1]+'.twist_offset', offset)
         cmds.connectAttr(footControl[1]+'.twist_offset', pmaTwist+'.input1D[2]')
         cmds.connectAttr(pmaTwist+'.output1D', ikHandleName+'.twist')
+
+        """

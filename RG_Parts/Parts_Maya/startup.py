@@ -4,6 +4,7 @@ from functools import partial
 import pymel.core as pm
 import maya.cmds as cmds
 import maya.mel as mel
+import Utils.Utils_File as fileUtils
 
 print "Loading my Kickass Tools"
 
@@ -47,32 +48,14 @@ def createMenu(items, *args):
     for item in items:
     	cmds.menuItem( label=item, c=partial(runScript, item))
 
-
-
-
-def findAllFiles(fileDirectory, fileExtension):
-    # Return a list of all file names, excluding the file extension
-    print fileDirectory
-    allFiles = os.listdir(fileDirectory)
-    
-    # Refine all files, listing only those of the specified file extension
-    returnFiles = []
-    for f in allFiles:
-        splitString = str(f).rpartition(fileExtension)
-        
-        if not splitString[1] == "" and splitString[2] == "":
-            returnFiles.append(splitString[0])
-
-    return returnFiles
-
 # Define the path to the scripts
 Script_Path = ( os.environ['GTOOLS'] + '/scripts')
 
 allScriptFiles = []
-pyFiles = findAllFiles(Script_Path, '.py')
+pyFiles = fileUtils.findAllFiles(Script_Path, '.py')
 for script in pyFiles:
 	allScriptFiles.append(script)
-melFiles = findAllFiles(Script_Path, '.mel')
+melFiles = fileUtils.findAllFiles(Script_Path, '.mel')
 for script in melFiles:
 	allScriptFiles.append(script)
 

@@ -19,6 +19,9 @@ class Create_Spine:
         self.ctrlPath = "C:/Users/Griffy/Google Drive/RG_ARTTOOLS/RG_Parts/Parts_Maya/Controls/"
 
     def install(self, *args):
+        print "install"
+
+        """
         # Collect layout info
     	lytObs = widget_utils.collectLayoutInfo()
         self.lyt_info['layoutObjs'] = lytObs[0]
@@ -38,6 +41,8 @@ class Create_Spine:
 
         ikSol = cmds.ikHandle(n='iks_spine_Ik', solver='ikSplineSolver', sj=self.jnt_info['iksJnts'][0], ee=self.jnt_info['iksJnts'][spl], ccv=True, )
         print ikSol
+
+        """
 
 # Create a new joint at the root and the top of the iksJoint chain.
 

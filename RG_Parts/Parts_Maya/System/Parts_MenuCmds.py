@@ -2,7 +2,7 @@ import os
 import sys
 import maya.cmds as cmds
 import RG_Parts.Parts_Maya.System.Parts_UI as Parts_UI
-import RG_Parts.Parts_Maya.System.utils as utils
+import RG_Parts.Parts_Maya.Utils.Utils_Part as partUtils
 
 class Parts_Menu():
 
@@ -37,22 +37,13 @@ class Parts_Menu():
         """ Use a flow layout for the  UI """
         UIElements["buttonFlowLayout"] = cmds.flowLayout(v=True, width=110, height=windowHeight, bgc=[0.4, 0.4, 0.4])
         # Make rigNode Button
-        cmds.symbolButton(width=buttonWidth, height=buttonHeight, image=IconPath+'RigNode.png', command=self.rigNode)
+        cmds.symbolButton(width=buttonWidth, height=buttonHeight, image=IconPath+'RigNode.png', command=partUtils.rigNode)
         cmds.setParent(UIElements["buttonFlowLayout"])
 
         """ Show the window"""
         cmds.showWindow(windowName)
 
-    def rigNode(self, *args):
-        # Find all the existing RG_Part nodes in the scene
-        parts = cmds.ls(et='RG_Part')
-        # Create a number suffix
-        num = str(utils.findHighestTrailingNumber(parts, 'RG_Part'))
-        # Create a transform
-        tform = cmds.createNode('transform', name='RG_Part_' + num)
-        # Create an RG_Part node and parent to the transform
-        rNode = cmds.createNode ('RG_Part', n='RG_Part_Shape_' + num, p=tform)
-        cmds.select(d=True)
+
 
     def load_partsUi(self, *args):
         import System.Parts_UI as Parts_UI
