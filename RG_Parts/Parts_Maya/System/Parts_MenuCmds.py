@@ -38,6 +38,7 @@ class Parts_Menu():
         UIElements["buttonFlowLayout"] = cmds.flowLayout(v=True, width=110, height=windowHeight, bgc=[0.4, 0.4, 0.4])
         # Make rigNode Button
         cmds.symbolButton(width=buttonWidth, height=buttonHeight, image=IconPath+'RigNode.png', command=partUtils.rigNode)
+        cmds.symbolButton(width=buttonWidth, height=buttonHeight, image=IconPath+'RigNode.png', command=partUtils.rigNodeRoot)
         cmds.setParent(UIElements["buttonFlowLayout"])
 
         """ Show the window"""

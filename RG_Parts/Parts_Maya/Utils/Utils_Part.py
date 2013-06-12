@@ -15,6 +15,18 @@ def rigNode(self, *args):
     rNode = cmds.createNode ('RG_Part', n='RG_Part_Shape_' + num, p=tform)
     cmds.select(d=True)
 
+def rigNodeRoot(self, *args):
+    # Find all the existing RG_Part nodes in the scene
+    parts = cmds.ls(et='RG_PartRoot')
+    # Create a number suffix
+    num = str(utils.findHighestTrailingNumber(parts, 'RG_PartRoot'))
+    # Create a transform
+    tform = cmds.createNode('transform', name='RG_PartRoot_' + num)
+    # Create an RG_Part node and parent to the transform
+    rNode = cmds.createNode ('RG_PartRoot', n='RG_PartRoot_Shape_' + num, p=tform)
+    cmds.select(d=True)
+
+
 
 
 def matchTwistAngle(twistAttribute, ikJoints, targetJoints):
