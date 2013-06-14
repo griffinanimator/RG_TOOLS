@@ -5,6 +5,62 @@ from functools import partial
 import RG_Parts.Parts_Maya.Utils.Utils as utils
 reload(utils)
 
+def scStretchyIk(partList, partJoints, ikHandleName, *args):
+    print "StretchyIK"
+    cmds.select(d=True)
+    pjntLen = len(partJoints)
+
+    sjnt = partJoints[0]
+    ejnt = partJoints[1]
+    sjPos = cmds.xform(sjnt, q=True, t=True, ws=True)
+    ejPos = cmds.xform(ejnt, q=True, t=True, ws=True)
+    # Create the ik solver
+    cmds.ikHandle(n= ikHandleName, sj=sjnt, ee=ejnt, sol = "ikSCsolver")
+    suffix = partJoints[0].partition('_')[2]
+    # Stretch ----------------------------------------------------------
+    #Start by creating all of the nodes we will need for the stretch.
+    adlStretch = cmds.shadingNode("addDoubleLinear", asUtility=True, n='adlNode_RStretch_' + suffix)
+    #clmpStretch = cmds.shadingNode("clamp", asUtility=True, n='clampNode_Stretch_' + suffix)
+    mdRStretch = cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_RStretch_' + suffix)
+    mdEStretch = cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_EStretch_' + suffix)
+    cmds.select(d=True)
+    disDim = cmds.distanceDimension(sp=(sjPos), ep=(ejPos))
+    cmds.rename('distanceDimension1', 'disDimNode_Stretch_' + suffix)
+ 
+    # Determine the length of the joint chain in default position
+    rootLen = cmds.getAttr(partJoints[0] + '.ty')
+    endLen = cmds.getAttr(partJoints[1] + '.ty')
+    chainLen = (rootLen + endLen)
+  
+    cmds.setAttr(adlStretch + '.input2', chainLen)
+    cmds.setAttr(mdRStretch + '.input2X', chainLen)
+    cmds.setAttr(mdEStretch + '.input2X', endLen)
+    print disDim
+
+    #cmds.connectAttr(disDim + '.distance', mdRStretch + '.input1')
+
+    cmds.connectAttr(mdRStretch + '.outputX', mdEStretch + '.input1X')
+
+    #Finally, we output our new values into the translateX of the knee and ankle joints.
+    cmds.connectAttr( mdEStretch + '.outputX', ejnt  + '.ty')
+
+def createPJoints(parts, *args):
+    jointList = []
+    cmds.select(d=True)
+    print parts
+    
+    jointNameR = 'pjnt_'+parts[0]
+    jointNameE = 'pjnt_end_'+parts[0]
+    pjntR = cmds.joint(n=jointNameR, p=(cmds.xform(parts[0], q=True, ws=True, t=True)))
+    pjntE = cmds.joint(n=jointNameE, p=(cmds.xform(parts[1], q=True, ws=True, t=True)))
+
+    jointList.append(pjntR)
+    jointList.append(pjntE)
+    print "done"
+    cmds.select(d=True)
+    return jointList
+
+
 def rigNode(userDefinedName, numParts, pParent, *args):
 
     Parts_List=[]
@@ -18,26 +74,22 @@ def rigNode(userDefinedName, numParts, pParent, *args):
         tformName = userDefinedName+'_Part_' + str(i)
    
         # Create a transform
-        tform = cmds.joint(n=tformName , p=pos)       
+        tform = cmds.createNode("transform", n=tformName )       
 
-        cmds.setAttr(tform+'.drawStyle', 2)
         # Create an RG_Part node and parent to the transform
         rnodeName = userDefinedName+'_Part_Shape_' + str(i)
         rNode = cmds.createNode('RG_Part', p=tform, n=rnodeName)
         
         cmds.select(d=True)
-        cmds.xform(rNode, t=pos)
+        cmds.xform(tform, t=pos)
 
-        if i !=0:
-            cmds.parent(rNode, Parts_List[i-1])
-        else:
-            cmds.parent(rNode, pParent)
+        cmds.parent(rNode, pParent)          
 
         lockAttrs=('.rx', '.ry', '.rz', '.sx', '.sy', '.sz')
         for attr in lockAttrs:
             cmds.setAttr(tform+attr, lock=True, keyable=False, channelBox=False)
 
-        Parts_List.append([tform, rNode])
+        Parts_List.append(tform)
         
         cmds.select(d=True)
     return Parts_List
@@ -174,42 +226,8 @@ def collectLayoutInfo(*args):
     lytTmp.reverse()
     
     return (lytTmp, sel)
-   
-
-def createJoints(prefix, lytObs, *args):
-    print "CreateJoints"
-
-    cmds.select(d=True)
-
-    ik_joints = []
-
-    for item in lytObs:
-        """ item[0] will be the joint
-            item[1] will be the position
-            item[2] will be the parent        
-        """
-        newJointName = item[0].replace("lyt_", prefix)
-
-        cmds.select(d=True)
-        if cmds.objExists(newJointName) == True:
-            cmds.delete(newJointName)
-        jnt = cmds.joint(p=item[1], n=newJointName )
-        ik_joints.append(jnt)
 
 
-    lytLen = len(lytObs)
-
-    for item in range(len(lytObs)):
-        if item != 0:
-            joint = lytObs[item][0].replace("lyt_", prefix)
-            jointParent = lytObs[item][2].replace("lyt_", prefix)
-            cmds.parent(joint, jointParent) 
-
-    for jnt in ik_joints:
-        cmds.joint(jnt, e=True, oj='xyz', secondaryAxisOrient='yup', ch=True, zso=True)
-
-
-    return ik_joints  
 
 
 def createStretchyIk(control, ikHandleName, pvName, suffix, jnt_info, lyt_info, *args):  
@@ -290,6 +308,7 @@ def createStretchyIk(control, ikHandleName, pvName, suffix, jnt_info, lyt_info, 
     cmds.connectAttr(mDivTwst+'.input1Y', pmaTwist+'.input1D[1]')
 
     # Calculate twist offset
+    """
     blueprintJoints = []
     for obj in lyt_info:
         blueprintJoints.append(obj[0])
@@ -298,3 +317,4 @@ def createStretchyIk(control, ikHandleName, pvName, suffix, jnt_info, lyt_info, 
     cmds.setAttr(control[1]+'.twist_offset', offset)
     cmds.connectAttr(control[1]+'.twist_offset', pmaTwist+'.input1D[2]')
     cmds.connectAttr(pmaTwist+'.output1D', ikHandleName+'.twist')
+    """

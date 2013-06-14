@@ -2,7 +2,7 @@ import os
 import sys
 import maya.cmds as cmds
 import RG_Parts.Parts_Maya.System.Parts_UI as Parts_UI
-import RG_Parts.Parts_Maya.Utils.Utils_Part as partUtils
+
 
 class Parts_Menu():
 

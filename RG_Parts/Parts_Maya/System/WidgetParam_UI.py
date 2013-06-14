@@ -66,4 +66,14 @@ class PartParam_UI:
 
         partRoot = Utils_Part.rigNodeRoot(numParts, userDefinedName)
         parts = Utils_Part.rigNode(userDefinedName, numParts, partRoot)
+        partsLen = len(parts)
+        for p in range(len(parts)):
+            
+            if p < partsLen-1:
+                print p    
+                partList = (parts[p], parts[p+1])       
+                partJoint = Utils_Part.createPJoints(partList)
+
+                ikHandleName = partJoint[0].replace('pjnt', 'ikh')
+                ikInfo = Utils_Part.scStretchyIk(partList, partJoint, ikHandleName)
 
