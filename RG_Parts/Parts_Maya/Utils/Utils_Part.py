@@ -1,30 +1,63 @@
 import maya.cmds as cmds
+import pymel.core as pm
 import os
 from functools import partial
 import RG_Parts.Parts_Maya.Utils.Utils as utils
+reload(utils)
 
+def rigNode(userDefinedName, numParts, pParent, *args):
 
-def rigNode(self, *args):
-    # Find all the existing RG_Part nodes in the scene
-    parts = cmds.ls(et='RG_Part')
-    # Create a number suffix
-    num = str(utils.findHighestTrailingNumber(parts, 'RG_Part'))
-    # Create a transform
-    tform = cmds.createNode('transform', name='RG_Part_' + num)
-    # Create an RG_Part node and parent to the transform
-    rNode = cmds.createNode ('RG_Part', n='RG_Part_Shape_' + num, p=tform)
-    cmds.select(d=True)
+    Parts_List=[]
+    for i in range(numParts):
+        # NOTE: Crappy attempt at position.  Fix this!!!
+        val = numParts
+        pos = [0.0, val-i, 0.0]
+        # Find all the existing RG_Part nodes in the scene
+        parts = cmds.ls(et='RG_Part')
+        # Create a number suffix
+        tformName = userDefinedName+'_Part_' + str(i)
+   
+        # Create a transform
+        tform = cmds.joint(n=tformName , p=pos)       
 
-def rigNodeRoot(self, *args):
+        cmds.setAttr(tform+'.drawStyle', 2)
+        # Create an RG_Part node and parent to the transform
+        rnodeName = userDefinedName+'_Part_Shape_' + str(i)
+        rNode = cmds.createNode('RG_Part', p=tform, n=rnodeName)
+        
+        cmds.select(d=True)
+        cmds.xform(rNode, t=pos)
+
+        if i !=0:
+            cmds.parent(rNode, Parts_List[i-1])
+        else:
+            cmds.parent(rNode, pParent)
+
+        lockAttrs=('.rx', '.ry', '.rz', '.sx', '.sy', '.sz')
+        for attr in lockAttrs:
+            cmds.setAttr(tform+attr, lock=True, keyable=False, channelBox=False)
+
+        Parts_List.append([tform, rNode])
+        
+        cmds.select(d=True)
+    return Parts_List
+
+def rigNodeRoot(numParts, userDefinedName, *args):
+    val = numParts+1
+    pos = [0.0, val, 0.0]
+    print pos
     # Find all the existing RG_Part nodes in the scene
     parts = cmds.ls(et='RG_PartRoot')
     # Create a number suffix
-    num = str(utils.findHighestTrailingNumber(parts, 'RG_PartRoot'))
+    num = str(utils.findHighestTrailingNumber(parts, 'PartRoot'))
     # Create a transform
-    tform = cmds.createNode('transform', name='RG_PartRoot_' + num)
+    tform = cmds.createNode('transform', name='PartRoot_' + num)
     # Create an RG_Part node and parent to the transform
-    rNode = cmds.createNode ('RG_PartRoot', n='RG_PartRoot_Shape_' + num, p=tform)
+    rNode = cmds.createNode ('RG_PartRoot', n='PartRoot_Shape_' + num, p=tform)
+    cmds.xform(tform, t=pos, ws=True)
     cmds.select(d=True)
+
+    return(rNode)
 
 
 
