@@ -67,13 +67,21 @@ class PartParam_UI:
         partRoot = Utils_Part.rigNodeRoot(numParts, userDefinedName)
         parts = Utils_Part.rigNode(userDefinedName, numParts, partRoot)
         partsLen = len(parts)
-        for p in range(len(parts)):
-            
+        for p in range(len(parts)):         
             if p < partsLen-1:
-                print p    
-                partList = (parts[p], parts[p+1])       
+                partList = (parts[p], parts[p+1]) 
+                print partList      
                 partJoint = Utils_Part.createPJoints(partList)
-
+                print partJoint
                 ikHandleName = partJoint[0].replace('pjnt', 'ikh')
                 ikInfo = Utils_Part.scStretchyIk(partList, partJoint, ikHandleName)
+
+                # Connect ikHnadles, parts, and joints
+                cmds.pointConstraint(partList[0], partJoint[0], mo=True)
+                cmds.connectAttr(partJoint[0] + '.rotate', partList[0] +'.rotateAxis')
+                #cmds.parent(partJoint[0], partList[0])
+                print ikInfo[0][0][0]
+                cmds.pointConstraint(partList[1], ikInfo[0][0][0])
+
+
 

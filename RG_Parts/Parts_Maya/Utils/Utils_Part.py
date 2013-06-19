@@ -6,7 +6,9 @@ import RG_Parts.Parts_Maya.Utils.Utils as utils
 reload(utils)
 
 def scStretchyIk(partList, partJoints, ikHandleName, *args):
-    print "StretchyIK"
+    # Empty list to store nodes generated in scStretchyIk
+    ikNodes = []
+
     cmds.select(d=True)
     pjntLen = len(partJoints)
 
@@ -15,39 +17,34 @@ def scStretchyIk(partList, partJoints, ikHandleName, *args):
     sjPos = cmds.xform(sjnt, q=True, t=True, ws=True)
     ejPos = cmds.xform(ejnt, q=True, t=True, ws=True)
     # Create the ik solver
-    cmds.ikHandle(n= ikHandleName, sj=sjnt, ee=ejnt, sol = "ikSCsolver")
+    ikH = cmds.ikHandle(n= ikHandleName, sj=sjnt, ee=ejnt, sol = "ikRPsolver")
     suffix = partJoints[0].partition('_')[2]
     # Stretch ----------------------------------------------------------
-    #Start by creating all of the nodes we will need for the stretch.
-    adlStretch = cmds.shadingNode("addDoubleLinear", asUtility=True, n='adlNode_RStretch_' + suffix)
-    #clmpStretch = cmds.shadingNode("clamp", asUtility=True, n='clampNode_Stretch_' + suffix)
-    mdRStretch = cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_RStretch_' + suffix)
+ 
     mdEStretch = cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_EStretch_' + suffix)
     cmds.select(d=True)
-    disDim = cmds.distanceDimension(sp=(sjPos), ep=(ejPos))
+    disDim = pm.distanceDimension(sp=(sjPos), ep=(ejPos))
+    disDim.rename('disDimNode_Stretch_Shape' + suffix)
+
+    cmds.connectAttr(disDim + '.distance', mdEStretch + '.input1X')
     cmds.rename('distanceDimension1', 'disDimNode_Stretch_' + suffix)
- 
+    
     # Determine the length of the joint chain in default position
-    rootLen = cmds.getAttr(partJoints[0] + '.ty')
     endLen = cmds.getAttr(partJoints[1] + '.ty')
-    chainLen = (rootLen + endLen)
-  
-    cmds.setAttr(adlStretch + '.input2', chainLen)
-    cmds.setAttr(mdRStretch + '.input2X', chainLen)
+
     cmds.setAttr(mdEStretch + '.input2X', endLen)
-    print disDim
-
-    #cmds.connectAttr(disDim + '.distance', mdRStretch + '.input1')
-
-    cmds.connectAttr(mdRStretch + '.outputX', mdEStretch + '.input1X')
 
     #Finally, we output our new values into the translateX of the knee and ankle joints.
     cmds.connectAttr( mdEStretch + '.outputX', ejnt  + '.ty')
 
+    ikNodes.append([ikH, mdEStretch, disDim])
+    return ikNodes
+    
+
+    
 def createPJoints(parts, *args):
     jointList = []
     cmds.select(d=True)
-    print parts
     
     jointNameR = 'pjnt_'+parts[0]
     jointNameE = 'pjnt_end_'+parts[0]
@@ -56,7 +53,7 @@ def createPJoints(parts, *args):
 
     jointList.append(pjntR)
     jointList.append(pjntE)
-    print "done"
+
     cmds.select(d=True)
     return jointList
 
@@ -85,9 +82,9 @@ def rigNode(userDefinedName, numParts, pParent, *args):
 
         cmds.parent(rNode, pParent)          
 
-        lockAttrs=('.rx', '.ry', '.rz', '.sx', '.sy', '.sz')
-        for attr in lockAttrs:
-            cmds.setAttr(tform+attr, lock=True, keyable=False, channelBox=False)
+        #lockAttrs=('.rx', '.ry', '.rz', '.sx', '.sy', '.sz')
+        #for attr in lockAttrs:
+            #cmds.setAttr(tform+attr, lock=True, keyable=False, channelBox=False)
 
         Parts_List.append(tform)
         
@@ -97,7 +94,6 @@ def rigNode(userDefinedName, numParts, pParent, *args):
 def rigNodeRoot(numParts, userDefinedName, *args):
     val = numParts+1
     pos = [0.0, val, 0.0]
-    print pos
     # Find all the existing RG_Part nodes in the scene
     parts = cmds.ls(et='RG_PartRoot')
     # Create a number suffix
