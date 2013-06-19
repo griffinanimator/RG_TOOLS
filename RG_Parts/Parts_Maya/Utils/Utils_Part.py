@@ -5,6 +5,41 @@ from functools import partial
 import RG_Parts.Parts_Maya.Utils.Utils as utils
 reload(utils)
 
+def createJoints(prefix, lytObs, *args):
+    print "CreateJoints"
+
+    cmds.select(d=True)
+
+    ik_joints = []
+
+    for item in lytObs:
+        """ item[0] will be the joint
+            item[1] will be the position
+            item[2] will be the parent        
+        """
+        newJointName = item[0].replace("lyt_", prefix)
+
+        cmds.select(d=True)
+        if cmds.objExists(newJointName) == True:
+            cmds.delete(newJointName)
+        jnt = cmds.joint(p=item[1], n=newJointName )
+        ik_joints.append(jnt)
+
+
+    lytLen = len(lytObs)
+
+    for item in range(len(lytObs)):
+        if item != 0:
+            joint = lytObs[item][0].replace("lyt_", prefix)
+            jointParent = lytObs[item][2].replace("lyt_", prefix)
+            cmds.parent(joint, jointParent) 
+
+    for jnt in ik_joints:
+        cmds.joint(jnt, e=True, oj='xyz', secondaryAxisOrient='yup', ch=True, zso=True)
+
+
+    return ik_joints  
+
 def scStretchyIk(partList, partJoints, ikHandleName, *args):
     # Empty list to store nodes generated in scStretchyIk
     ikNodes = []
@@ -18,15 +53,19 @@ def scStretchyIk(partList, partJoints, ikHandleName, *args):
     ejPos = cmds.xform(ejnt, q=True, t=True, ws=True)
     # Create the ik solver
     ikH = cmds.ikHandle(n= ikHandleName, sj=sjnt, ee=ejnt, sol = "ikRPsolver")
+    cmds.setAttr(ikH[0] +'.visibility', 0)
     suffix = partJoints[0].partition('_')[2]
     # Stretch ----------------------------------------------------------
  
     mdEStretch = cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_EStretch_' + suffix)
     cmds.select(d=True)
-    disDim = pm.distanceDimension(sp=(sjPos), ep=(ejPos))
-    disDim.rename('disDimNode_Stretch_Shape' + suffix)
-
+    # NOTE: I need to change disDim transform name
+    disDim = cmds.distanceDimension(sp=(sjPos), ep=(ejPos))
+    cmds.setAttr('distanceDimension1.visibility', 0)
     cmds.connectAttr(disDim + '.distance', mdEStretch + '.input1X')
+    #cmds.rename('distanceDimension1', 'disDimNode_Stretch_Shape' + suffix)
+
+    
     cmds.rename('distanceDimension1', 'disDimNode_Stretch_' + suffix)
     
     # Determine the length of the joint chain in default position
@@ -37,7 +76,7 @@ def scStretchyIk(partList, partJoints, ikHandleName, *args):
     #Finally, we output our new values into the translateX of the knee and ankle joints.
     cmds.connectAttr( mdEStretch + '.outputX', ejnt  + '.ty')
 
-    ikNodes.append([ikH, mdEStretch, disDim])
+    ikNodes.append([ikH[0], mdEStretch, 'disDimNode_Stretch_' + suffix])
     return ikNodes
     
 
@@ -104,6 +143,10 @@ def rigNodeRoot(numParts, userDefinedName, *args):
     rNode = cmds.createNode ('RG_PartRoot', n='PartRoot_Shape_' + num, p=tform)
     cmds.xform(tform, t=pos, ws=True)
     cmds.select(d=True)
+
+    # Make an attribute to store the number of parts
+    cmds.addAttr(tform, shortName='pc', longName='PartCount', defaultValue=1.0, minValue=1.0, maxValue=10000, k=True )
+    cmds.setAttr(tform+'.PartCount', numParts)
 
     return(rNode)
 

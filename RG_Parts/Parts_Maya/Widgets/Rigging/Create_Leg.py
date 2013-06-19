@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 
-import Utils.Utils_Widget as widget_utils
-reload(widget_utils)
+import Utils.Utils_Part as part_utils
+reload(part_utils)
 
 CLASS_NAME = "Create_Leg"
 
@@ -22,19 +22,17 @@ class Create_Leg:
     def install(self, *args):
         # Collect layout info
         print "Install"
-   
-
-        """
-    	lytObs = widget_utils.collectLayoutInfo()
+  
+    	lytObs = part_utils.collectLayoutInfo()
         self.lyt_info['layoutObjs'] = lytObs[0]
         self.lyt_info['layoutRoot'] = lytObs[1]
 
         # Find the side we are on
-        side = widget_utils.getSide(self.lyt_info['layoutRoot'])
+        #side = part_utils.getSide(self.lyt_info['layoutRoot'])
 
         # Create an ik joint chain
-    	self.jnt_info['ikJnts'] = widget_utils.createJoints('ikj_'+side+"_", self.lyt_info['layoutObjs'])
-
+    	self.jnt_info['ikJnts'] = part_utils.createJoints('ikj_', self.lyt_info['layoutObjs'])
+        """
         # Define names for components involved in ik setup
         ikHandleName = "ikHandle_%s_leg" % (side)
         ctrlName = "ctrl_%s_leg" % (side)
@@ -44,7 +42,7 @@ class Create_Leg:
 
         # Define foot attribute names
         ctrlAttrs = ('twist', 'stretch', 'foot_roll', 'roll_break', 'foot_twist', 'foot_bank', 'pivot_posX', 'pivot_posZ', 'toe_flap', 'twist_offset')
-        footControl = widget_utils.setupControlObject("FootControl.ma", ctrlName, ctrlAttrs, self.lyt_info['layoutObjs'][2][1], self.ctrlPath)
+        footControl = part_utils.setupControlObject("FootControl.ma", ctrlName, ctrlAttrs, self.lyt_info['layoutObjs'][2][1], self.ctrlPath)
 
         # Create the stretchy ik chain
         ikInfo = self.createStretchyIk(footControl, ikHandleName, pvName, suffix)
@@ -57,7 +55,7 @@ class Create_Leg:
         self.foot_info['footInfo'] = self.setupFoot(suffix, footControl[1], ikJntPos, ikHandleName)
 
 
-
+    
     def setupFoot(self, suffix, footControl, ikJntPos, ikHandleName, *args):
         print 'In Setup Foot'
         newFootGrps = []
@@ -239,7 +237,7 @@ class Create_Leg:
         blueprintJoints = []
         for obj in self.lyt_info['layoutObjs']:
             blueprintJoints.append(obj[0])
-        offset = widget_utils.matchTwistAngle(ikHandleName+".twist", self.jnt_info['ikJnts'], blueprintJoints)
+        offset = part_utils.matchTwistAngle(ikHandleName+".twist", self.jnt_info['ikJnts'], blueprintJoints)
         # Make a buffer between the control and the ik twist
         cmds.setAttr(footControl[1]+'.twist_offset', offset)
         cmds.connectAttr(footControl[1]+'.twist_offset', pmaTwist+'.input1D[2]')

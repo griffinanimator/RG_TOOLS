@@ -59,29 +59,51 @@ class PartParam_UI:
         cmds.showWindow(self.windowName)
 
     def createPart(self, *args):
+        contained_nodes = []
         # Collect info from the UI to build part
         userDefinedName = cmds.textField(self.UIElements["name_text"], q=True, text=True)
 
         numParts = cmds.intField(self.UIElements["num_text"], q=True, v=True)
 
         partRoot = Utils_Part.rigNodeRoot(numParts, userDefinedName)
+        contained_nodes.append(partRoot)
         parts = Utils_Part.rigNode(userDefinedName, numParts, partRoot)
         partsLen = len(parts)
-        for p in range(len(parts)):         
+        for p in range(len(parts)):  
+            contained_nodes.append(parts[p])       
             if p < partsLen-1:
                 partList = (parts[p], parts[p+1]) 
-                print partList      
+     
                 partJoint = Utils_Part.createPJoints(partList)
-                print partJoint
+                for j in partJoint:
+                    contained_nodes.append(j)
+                    # Set drawing overide on joints
+                    cmds.setAttr(j + '.overrideEnabled', 1)
+                    cmds.setAttr(j + '.overrideDisplayType', 1)
+         
                 ikHandleName = partJoint[0].replace('pjnt', 'ikh')
                 ikInfo = Utils_Part.scStretchyIk(partList, partJoint, ikHandleName)
+                for i in ikInfo[0]:
+                    contained_nodes.append(i)
 
                 # Connect ikHnadles, parts, and joints
-                cmds.pointConstraint(partList[0], partJoint[0], mo=True)
+                ptca =cmds.pointConstraint(partList[0], partJoint[0], mo=True)
                 cmds.connectAttr(partJoint[0] + '.rotate', partList[0] +'.rotateAxis')
                 #cmds.parent(partJoint[0], partList[0])
-                print ikInfo[0][0][0]
-                cmds.pointConstraint(partList[1], ikInfo[0][0][0])
+                ptcb = cmds.pointConstraint(partList[1], ikInfo[0][0])
+
+                contained_nodes.append(ptca[0])
+                contained_nodes.append(ptcb[0])
+
+        # Cleanup nodes and add to a container.
+        print contained_nodes
+        containerName = (userDefinedName+'_container')
+        con1 = cmds.container(n=containerName)
+        for i in contained_nodes:
+            print i
+            cmds.container(containerName, edit=True, addNode=i, inc=True, ish=True, ihb=True, iha=True)
+
+
 
 
 

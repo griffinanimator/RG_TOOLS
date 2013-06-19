@@ -34,7 +34,7 @@ class Parts_UI:
 
         arttools = os.environ["GTOOLS"]
         lytWtPath = arttools + "/RG_Parts/Parts_Maya/Widgets/Layout/"
-
+        """
         for widget in self.returnWidgets(lytWtPath):
             print widget
             mod = __import__("Widgets.Layout."+widget, {}, {}, [widget])
@@ -46,7 +46,7 @@ class Parts_UI:
 
             cmds.separator(p=self.UIElements["guiFlowLayout2"])
             self.UIElements["module_button_"+widget] = cmds.button(label=title, width=buttonWidth, height=buttonHeight, p=self.UIElements["guiFlowLayout2"], command=partial(self.installWidget, widget))
- 
+        """
         rigWtPath = arttools + "/RG_Parts/Parts_Maya/Widgets/Rigging/"
         
         for widget in self.returnWidgets(rigWtPath):
@@ -67,7 +67,8 @@ class Parts_UI:
         cmds.showWindow(self.windowName)
 
     def installWidget(self, widget, *args):
-        mod = __import__("Widgets.Layout."+widget, {}, {}, [widget])
+        print "Install"
+        mod = __import__("Widgets.Rigging."+widget, {}, {}, [widget])
         reload(mod)
         
         widgetClass = getattr(mod, mod.CLASS_NAME)

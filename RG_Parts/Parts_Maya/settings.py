@@ -5,6 +5,7 @@ import maya.cmds as cmds
 
 import RG_Parts.Parts_Maya.Utils.Utils_File as File_Utils
 import RG_Parts.Parts_Maya.System.Parts_MenuCmds as PMC
+reload(PMC)
 
 # Load Parts Plugins
 Parts_Plugin_Path = ( os.environ['Parts_Maya'] + 'Plugins/')
