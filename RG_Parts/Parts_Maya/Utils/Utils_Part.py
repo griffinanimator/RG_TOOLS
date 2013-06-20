@@ -17,7 +17,7 @@ def createJoints(prefix, lytObs, *args):
             item[1] will be the position
             item[2] will be the parent        
         """
-        newJointName = item[0].replace("lyt_", prefix)
+        newJointName = prefix+item[0]
 
         cmds.select(d=True)
         if cmds.objExists(newJointName) == True:
@@ -29,9 +29,9 @@ def createJoints(prefix, lytObs, *args):
     lytLen = len(lytObs)
 
     for item in range(len(lytObs)):
-        if item != 0:
-            joint = lytObs[item][0].replace("lyt_", prefix)
-            jointParent = lytObs[item][2].replace("lyt_", prefix)
+        if lytObs[item][2] != 'None':
+            joint = prefix+lytObs[item][0]
+            jointParent = prefix+lytObs[item][2]
             cmds.parent(joint, jointParent) 
 
     for jnt in ik_joints:
@@ -138,9 +138,9 @@ def rigNodeRoot(numParts, userDefinedName, *args):
     # Create a number suffix
     num = str(utils.findHighestTrailingNumber(parts, 'PartRoot'))
     # Create a transform
-    tform = cmds.createNode('transform', name='PartRoot_' + num)
+    tform = cmds.createNode('transform', name=userDefinedName+'_PartRoot_' + num)
     # Create an RG_Part node and parent to the transform
-    rNode = cmds.createNode ('RG_PartRoot', n='PartRoot_Shape_' + num, p=tform)
+    rNode = cmds.createNode ('RG_PartRoot', n=userDefinedName+'_PartRoot_Shape_' + num, p=tform)
     cmds.xform(tform, t=pos, ws=True)
     cmds.select(d=True)
 
@@ -156,6 +156,7 @@ def rigNodeRoot(numParts, userDefinedName, *args):
 def matchTwistAngle(twistAttribute, ikJoints, targetJoints):
     currentVector = []
     targetVector = []
+    print ikJoints
     
     currentVector = calculateTwistVector(ikJoints[0], ikJoints[1], ikJoints[len(ikJoints)-1])
     targetVector = calculateTwistVector(targetJoints[0], targetJoints[1], targetJoints[len(targetJoints)-1])
@@ -250,24 +251,25 @@ def getSide(layoutRoot, *args):
     side = parB
     return parB
 
-def collectLayoutInfo(*args):
+def collectLayoutInfo(sel, *args):
     print "CollectLayoutInfo"
     lytTmp = []
-    sel = cmds.ls(sl=True)
+
+    # NOTE:  Check this is the root.  I will probably do this with scriptJob widget detection
 
     rel = cmds.listRelatives(sel, ad=True, type="transform")
+    relLen = len(rel)
+    for i in range(len(rel)):
+        pos = cmds.xform(rel[i], q=True, ws=True, t=True)
+        # NOTE:  This seems to work at the moment, but I want to force the order.
+        if i == 0:
+            lytTmp.append([rel[i], pos, 'None'])
+        else:
+            lytTmp.append([rel[i], pos, rel[i-1]])
 
-    for item in rel:
-        print item
-        pos = cmds.xform(item, q=True, ws=True, t=True)
-        parent = cmds.listRelatives(item, p=True)
-        lytTmp.append([item, pos, parent[0]])
-    lytTmp.reverse()
-    
-    return (lytTmp, sel)
+    return lytTmp
 
-
-
+        
 
 def createStretchyIk(control, ikHandleName, pvName, suffix, jnt_info, lyt_info, *args):  
     rootPos = cmds.xform(jnt_info[0], q=True, t=True, ws=True)
@@ -288,8 +290,8 @@ def createStretchyIk(control, ikHandleName, pvName, suffix, jnt_info, lyt_info, 
     disDim = cmds.distanceDimension(sp=(rootPos), ep=(endPos))
 
     cmds.rename('distanceDimension1', 'disDimNode_Stretch_' + suffix)
-    cmds.rename('locator1', 'lctrDis_Root_' + suffix)
-    cmds.rename('locator2', 'lctrDis_End_' + suffix)
+    #cmds.rename('locator1', 'lctrDis_Root_' + suffix)
+    #cmds.rename('locator2', 'lctrDis_End_' + suffix)
     # TODO: Need to save these for later
     # cmds.parent('lctrDis_hip', 'jnt_pelvis')
     cmds.parent('lctrDis_End_' + suffix, control[1])

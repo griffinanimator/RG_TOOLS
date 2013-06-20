@@ -1,4 +1,6 @@
 import maya.cmds as cmds
+import os
+import pymel.core as pm
 
 import Utils.Utils_Part as part_utils
 reload(part_utils)
@@ -22,38 +24,53 @@ class Create_Leg:
     def install(self, *args):
         # Collect layout info
         print "Install"
+        sel = cmds.ls(sl=True)
   
-    	lytObs = part_utils.collectLayoutInfo()
-        self.lyt_info['layoutObjs'] = lytObs[0]
-        self.lyt_info['layoutRoot'] = lytObs[1]
+    	lytObs = part_utils.collectLayoutInfo(sel)
 
         # Find the side we are on
         #side = part_utils.getSide(self.lyt_info['layoutRoot'])
-
+        # Create an rig joint chain
+        self.jnt_info['rigJnts'] = part_utils.createJoints('rigj_', lytObs)
         # Create an ik joint chain
-    	self.jnt_info['ikJnts'] = part_utils.createJoints('ikj_', self.lyt_info['layoutObjs'])
-        """
+    	self.jnt_info['ikJnts'] = part_utils.createJoints('ikj_', lytObs)
+        
         # Define names for components involved in ik setup
-        ikHandleName = "ikHandle_%s_leg" % (side)
-        ctrlName = "ctrl_%s_leg" % (side)
+        userDefinedName = sel[0].partition('PartRoot_')[0]
+        print userDefinedName
+        #ikHandleName = "ikHandle_%s_leg" % (side)
+        ikHandleName = userDefinedName + 'ikh'
+        #ctrlName = "ctrl_%s_leg" % (side)
+        ctrlName = userDefinedName + 'ctrl'
 
-        pvName = "pv_%s_leg" % (side)
-        suffix = "%s_leg" % (side)
+        #pvName = "pv_%s_leg" % (side)
+        pvName = userDefinedName + 'pv_ctrl'
+        #suffix = "%s_leg" % (side)
+        suffix = userDefinedName 
 
         # Define foot attribute names
         ctrlAttrs = ('twist', 'stretch', 'foot_roll', 'roll_break', 'foot_twist', 'foot_bank', 'pivot_posX', 'pivot_posZ', 'toe_flap', 'twist_offset')
-        footControl = part_utils.setupControlObject("FootControl.ma", ctrlName, ctrlAttrs, self.lyt_info['layoutObjs'][2][1], self.ctrlPath)
+        
+        # NOTE: Dynamically generate the control objects
+        footControl = part_utils.setupControlObject("FootControl.ma", ctrlName, ctrlAttrs, lytObs[2][1], os.environ['Parts_Maya_Controls'])
+        # NOTE: Try deleting the stupid lyt so the disDim node builds with locators
+        f = cmds.container('Test_container', q=True, nl=True)
+        for i in f:
+            try:
+                cmds.delete(i)
+            except: pass
+
 
         # Create the stretchy ik chain
         ikInfo = self.createStretchyIk(footControl, ikHandleName, pvName, suffix)
-
+        
         # Setup the ik foot
         ikJntPos = []
         for jnt in self.jnt_info['ikJnts']:
             pos = cmds.xform(jnt, q=True, t=True, ws=True)
             ikJntPos.append(pos)
         self.foot_info['footInfo'] = self.setupFoot(suffix, footControl[1], ikJntPos, ikHandleName)
-
+        
 
     
     def setupFoot(self, suffix, footControl, ikJntPos, ikHandleName, *args):
@@ -171,9 +188,12 @@ class Create_Leg:
         mdLStretch = cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_RStretch_' + suffix)
         mdKStretch = cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_MStretch_' + suffix)
         mdAStretch = cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_EStretch_' + suffix)
+
+        
+        # NOTE: DisDim nodes are wacky.  Can I use something else?
+
         cmds.select(d=True)
         disDim = cmds.distanceDimension(sp=(rootPos), ep=(endPos))
-
         cmds.rename('distanceDimension1', 'disDimNode_Stretch_' + suffix)
         cmds.rename('locator1', 'lctrDis_Root_' + suffix)
         cmds.rename('locator2', 'lctrDis_End_' + suffix)
@@ -234,13 +254,13 @@ class Create_Leg:
         cmds.connectAttr(mDivTwst+'.input1Y', pmaTwist+'.input1D[1]')
 
         # Calculate twist offset
-        blueprintJoints = []
-        for obj in self.lyt_info['layoutObjs']:
-            blueprintJoints.append(obj[0])
-        offset = part_utils.matchTwistAngle(ikHandleName+".twist", self.jnt_info['ikJnts'], blueprintJoints)
+        #blueprintJoints = []
+        
+        #for obj in self.jnt_info['rigJnts']:
+            #blueprintJoints.append(obj[0])
+        offset = part_utils.matchTwistAngle(ikHandleName+".twist", self.jnt_info['ikJnts'], self.jnt_info['rigJnts'])
         # Make a buffer between the control and the ik twist
         cmds.setAttr(footControl[1]+'.twist_offset', offset)
         cmds.connectAttr(footControl[1]+'.twist_offset', pmaTwist+'.input1D[2]')
         cmds.connectAttr(pmaTwist+'.output1D', ikHandleName+'.twist')
-
-        """
+        

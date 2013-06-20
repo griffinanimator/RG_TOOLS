@@ -19,6 +19,11 @@ os.environ['Parts_Maya_Icons']  = os.environ['GTOOLS'] + 'RG_Tools/RG_Parts/Part
 if not os.environ['Parts_Maya_Icons'] in sys.path:
 	sys.path.append(os.environ['Parts_Maya_Icons'])
 
+os.environ['Parts_Maya_Controls']  = os.environ['GTOOLS'] + '//RG_Parts/Parts_Maya/Controls/'
+
+if not os.environ['Parts_Maya_Controls'] in sys.path:
+    sys.path.append(os.environ['Parts_Maya_Controls'])
+
 """
 # Path to animPicker
 os.environ['Anim_Picker']  = 'C:/Users/rgriffin/Documents/GitHub/anim_picker/'
