@@ -18,8 +18,6 @@ class Create_Leg:
         self.lyt_info = {}
         self.jnt_info = {}
         self.foot_info = {}
-        # Path to the control objects
-        self.ctrlPath = "C:/Users/Griffy/Google Drive/RG_ARTTOOLS/RG_Parts/Parts_Maya/Controls/"
 
     def install(self, *args):
         # Collect layout info
@@ -69,11 +67,11 @@ class Create_Leg:
         for jnt in self.jnt_info['ikJnts']:
             pos = cmds.xform(jnt, q=True, t=True, ws=True)
             ikJntPos.append(pos)
-        self.foot_info['footInfo'] = self.setupFoot(suffix, footControl[1], ikJntPos, ikHandleName)
+        self.foot_info['footInfo'] = self.setupRGFoot(suffix, footControl[1], ikJntPos, ikHandleName)
         
 
     
-    def setupFoot(self, suffix, footControl, ikJntPos, ikHandleName, *args):
+    def setupRGFoot(self, suffix, footControl, ikJntPos, ikHandleName, *args):
         print 'In Setup Foot'
         newFootGrps = []
         # Create utility nodes
@@ -98,19 +96,20 @@ class Create_Leg:
         cmds.setAttr (conBRoll + '.operation', 3)
 
         # Make Ik Handles
-        ikBall = cmds.ikHandle(n= "ikh_ball_" + suffix, sj= self.jnt_info['ikJnts'][2], ee= self.jnt_info['ikJnts'][4], sol = "ikSCsolver")
-        ikToe = cmds.ikHandle(n= "ikh_toe_" + suffix, sj=  self.jnt_info['ikJnts'][4], ee= self.jnt_info['ikJnts'][5], sol = "ikSCsolver")
+        ikBall = cmds.ikHandle(n= "ikh_ball_" + suffix, sj= self.jnt_info['ikJnts'][2], ee= self.jnt_info['ikJnts'][3], sol = "ikSCsolver")
+        print self.jnt_info['ikJnts']
+        ikToe = cmds.ikHandle(n= "ikh_toe_" + suffix, sj=  self.jnt_info['ikJnts'][3], ee= self.jnt_info['ikJnts'][4], sol = "ikSCsolver")
         # Create the foot groups
         footGrps = ('grp_footPivot', 'grp_heel', 'grp_toe', 'grp_ball', 'grp_flap')
 
         for grp in footGrps:
             grpName = (grp + '_' + suffix)
             grp = cmds.group(n=grpName, empty=True)
-            cmds.xform(grp, t=ikJntPos[4])
+            cmds.xform(grp, t=ikJntPos[3])
             if grp == footGrps[1] + '_' + suffix:
-                cmds.xform(grp, t=ikJntPos[3])
+                cmds.xform(grp, t=ikJntPos[2])
             if grp == footGrps[2] + '_' + suffix:
-                cmds.xform(grp, t=ikJntPos[5])
+                cmds.xform(grp, t=ikJntPos[4])
         for i in range(len(footGrps)):
             newFootGrps.append(footGrps[i])
             cmds.select(d=True)
@@ -254,10 +253,6 @@ class Create_Leg:
         cmds.connectAttr(mDivTwst+'.input1Y', pmaTwist+'.input1D[1]')
 
         # Calculate twist offset
-        #blueprintJoints = []
-        
-        #for obj in self.jnt_info['rigJnts']:
-            #blueprintJoints.append(obj[0])
         offset = part_utils.matchTwistAngle(ikHandleName+".twist", self.jnt_info['ikJnts'], self.jnt_info['rigJnts'])
         # Make a buffer between the control and the ik twist
         cmds.setAttr(footControl[1]+'.twist_offset', offset)
