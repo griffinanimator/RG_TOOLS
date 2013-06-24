@@ -35,7 +35,7 @@ class Create_ASpine:
         # Create an ik joint chain
         self.jnt_info['iksJnts'] = part_utils.createJoints('ikSj_', lytObs)
         self.jnt_info['ikrJnts'] = part_utils.createJoints('ikRj_', lytObs)
-        self.jnt_info['ikJnts'] = part_utils.createJoints('ikj_', lytObs)
+        #self.jnt_info['ikJnts'] = part_utils.createJoints('ikj_', lytObs)
 
         spl = len(self.jnt_info['iksJnts']) -1
 
@@ -73,11 +73,13 @@ class Create_ASpine:
                 ikHandles.append(ikh)
 
         # Point constrain 1st iks to 1st ikb
-        for j in range(spl):
+        for j in range(spl+1):
             cmds.pointConstraint(self.jnt_info['iksJnts'][j], self.jnt_info['ikrJnts'][j], mo=True)
+            cmds.pointConstraint(self.jnt_info['ikrJnts'][j], self.jnt_info['rigJnts'][j], mo=True)
 
         # Create a locator for each ikh
-        for i in range(spl):
+        locator_groups = []
+        for i in range(spl+1):
             bPos = cmds.xform(self.jnt_info['iksJnts'][i], q=True, ws=True, t=True)
             nPos = [bPos[0], bPos[1], bPos[2]+1.0]
             lctr = cmds.spaceLocator(name='lctr_'+self.jnt_info['iksJnts'][i], a=True)
@@ -86,16 +88,18 @@ class Create_ASpine:
             cmds.xform(grp, ws=True, t=bPos)
             cmds.parent(lctr, grp)
             # Create pole vector constraints
-            print ikHandles[i]
-            cmds.poleVectorConstraint(lctr, ikHandles[i][0])
+            if i < spl:
+                cmds.poleVectorConstraint(lctr, ikHandles[i][0])
             cmds.parent(grp, self.jnt_info['iksJnts'][i]) 
             cmds.makeIdentity( grp, apply=True )
+            locator_groups.append(grp)
+            self.jnt_info['locator_groups'] = locator_groups
 
         # Create PMA nodes to control the twist
         # NOTE:  This is tricky if we want to allow for more joints.  For now I am coding for 5 but need a solution for more.
         pma_nodes = []
-        for i in range(spl-1):
-            if spl > 4: 
+        for i in range(spl+1):
+            if spl > 5: 
                 print " I currently only support 5 joints"
                 return
             else:
@@ -105,14 +109,55 @@ class Create_ASpine:
                 pma_nodes.append(pma)
 
 
-            # Now connect the Pma
-            #cmds.connectAttr()
-            self.jnt_info['rootJnts']
+        # Now connect the Pma
+        self.jnt_info['twistPma'] = pma_nodes
+        cmds.connectAttr(self.jnt_info['rootJnts'][0] + '.ry', self.jnt_info['twistPma'][2]+'.input1D[0]')
+        cmds.connectAttr(self.jnt_info['rootJnts'][1] + '.ry', self.jnt_info['twistPma'][2]+'.input1D[1]')
+        cmds.connectAttr(self.jnt_info['twistPma'][2]+'.output1D', self.jnt_info['locator_groups'][2] +'.rx')
+
+        cmds.connectAttr(self.jnt_info['twistPma'][0]+'.output1D', self.jnt_info['twistPma'][1]+'.input1D[0]')
+        cmds.connectAttr(self.jnt_info['rootJnts'][0] + '.ry', self.jnt_info['twistPma'][1]+'.input1D[1]')
+        cmds.connectAttr(self.jnt_info['twistPma'][1]+'.output1D', self.jnt_info['locator_groups'][1] +'.rx')
+
+        cmds.connectAttr(self.jnt_info['rootJnts'][0] + '.ry', self.jnt_info['twistPma'][0]+'.input1D[0]')
+        cmds.connectAttr(self.jnt_info['twistPma'][0]+'.output1D', self.jnt_info['locator_groups'][0] +'.rx')
+
+        cmds.connectAttr(self.jnt_info['rootJnts'][0] + '.ry', self.jnt_info['twistPma'][3]+'.input1D[0]')
+        cmds.connectAttr(self.jnt_info['twistPma'][2]+'.output1D', self.jnt_info['twistPma'][3]+'.input1D[1]')
+        cmds.connectAttr(self.jnt_info['twistPma'][3]+'.output1D', self.jnt_info['locator_groups'][3] +'.rx')
+
+        cmds.connectAttr(self.jnt_info['rootJnts'][1] + '.ry', self.jnt_info['twistPma'][4]+'.input1D[0]')
+        cmds.connectAttr(self.jnt_info['twistPma'][4]+'.output1D', self.jnt_info['locator_groups'][4] +'.ry')
+
+        # Make the spine stretch.
+        # NOTE: Try the expression method
+        # NOTE: Add stretch ammount attribute.
+        #cmds.expression( s= 'surface1.sx = %s.arcLength' %  curveInfoNode )
+        curveInfoNode = cmds.arclen(userDefinedName+'_aSpine_curve', ch=True)
+        mdsNode_Name = self.jnt_info['iksJnts'][0].replace('ikSj', 'mdStretch') 
+
+        mds = cmds.shadingNode("multiplyDivide", asUtility=True, n=mdsNode_Name)
+  
+        cmds.setAttr(mds+'.operation', 2) #divide
+        cmds.connectAttr(curveInfoNode+'.arcLength', mds+'.input1X')
+        #cmds.connectAttr(curveInfoNode+'.arcLength', mda+'.input2X')
+        crvLen = cmds.getAttr(curveInfoNode+'.arcLength')
+        print crvLen
+        cmds.setAttr(mds+'.input2X', crvLen)
+       
+        # Connect stretch to joints
+        for i in range(len(self.jnt_info['iksJnts'])-1):
+            cmds.connectAttr(mds+'.outputX', self.jnt_info['iksJnts'][i]+'.sx')
+
+
+        cmds.rename(curveInfoNode, userDefinedName+'_curveInfo')
+        
+        
 
 
 
 
-            print self.jnt_info['twistPma']
+            
 
             
 
