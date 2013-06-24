@@ -17,7 +17,6 @@ class Create_ASpine:
         # Dictionary to store info about the layout object
         self.lyt_info = {}
         self.jnt_info = {}
-        self.foot_info = {}
 
 
     def install(self, *args):
@@ -91,6 +90,31 @@ class Create_ASpine:
             cmds.poleVectorConstraint(lctr, ikHandles[i][0])
             cmds.parent(grp, self.jnt_info['iksJnts'][i]) 
             cmds.makeIdentity( grp, apply=True )
+
+        # Create PMA nodes to control the twist
+        # NOTE:  This is tricky if we want to allow for more joints.  For now I am coding for 5 but need a solution for more.
+        pma_nodes = []
+        for i in range(spl-1):
+            if spl > 4: 
+                print " I currently only support 5 joints"
+                return
+            else:
+                pmaNode_Name = self.jnt_info['iksJnts'][i].replace('ikSj', 'pmaTwist_') 
+                pma = cmds.shadingNode("plusMinusAverage", asUtility=True, n=pmaNode_Name)
+                cmds.setAttr(pma+'.operation', 3) #average
+                pma_nodes.append(pma)
+
+
+            # Now connect the Pma
+            #cmds.connectAttr()
+            self.jnt_info['rootJnts']
+
+
+
+
+            print self.jnt_info['twistPma']
+
+            
 
         
 
