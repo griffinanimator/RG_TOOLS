@@ -7,6 +7,8 @@ reload(utils)
 
 def createJoints(prefix, lytObs, *args):
     print "CreateJoints"
+    print prefix
+
 
     cmds.select(d=True)
 
@@ -17,6 +19,7 @@ def createJoints(prefix, lytObs, *args):
             item[1] will be the position
             item[2] will be the parent        
         """
+        print item[0]
         newJointName = prefix+item[0]
 
         cmds.select(d=True)
@@ -41,49 +44,42 @@ def createJoints(prefix, lytObs, *args):
     return ik_joints  
 
 def scStretchyIk(partList, partJoints, ikHandleName, *args):
-    # Empty list to store nodes generated in scStretchyIk
-    ikNodes = []
-
+    print "StretchyIK"
     cmds.select(d=True)
     pjntLen = len(partJoints)
+    print partJoints
 
     sjnt = partJoints[0]
     ejnt = partJoints[1]
     sjPos = cmds.xform(sjnt, q=True, t=True, ws=True)
     ejPos = cmds.xform(ejnt, q=True, t=True, ws=True)
     # Create the ik solver
-    ikH = cmds.ikHandle(n= ikHandleName, sj=sjnt, ee=ejnt, sol = "ikRPsolver")
-    cmds.setAttr(ikH[0] +'.visibility', 0)
+    ikh = cmds.ikHandle(n= ikHandleName, sj=sjnt, ee=ejnt, sol = "ikSCsolver")
     suffix = partJoints[0].partition('_')[2]
     # Stretch ----------------------------------------------------------
- 
+    #Start by creating all of the nodes we will need for the stretch.
     mdEStretch = cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_EStretch_' + suffix)
     cmds.select(d=True)
-    # NOTE: I need to change disDim transform name
     disDim = cmds.distanceDimension(sp=(sjPos), ep=(ejPos))
-    cmds.setAttr('distanceDimension1.visibility', 0)
     cmds.connectAttr(disDim + '.distance', mdEStretch + '.input1X')
-    #cmds.rename('distanceDimension1', 'disDimNode_Stretch_Shape' + suffix)
-
-    
     cmds.rename('distanceDimension1', 'disDimNode_Stretch_' + suffix)
-    
+ 
     # Determine the length of the joint chain in default position
     endLen = cmds.getAttr(partJoints[1] + '.ty')
 
     cmds.setAttr(mdEStretch + '.input2X', endLen)
+    print disDim
 
     #Finally, we output our new values into the translateX of the knee and ankle joints.
     cmds.connectAttr( mdEStretch + '.outputX', ejnt  + '.ty')
 
-    ikNodes.append([ikH[0], mdEStretch, 'disDimNode_Stretch_' + suffix])
-    return ikNodes
-    
+    # Constrain the ikHandles to the part controls
+    #cmds.pointConstraint(partList[1], ikh)
 
-    
 def createPJoints(parts, *args):
     jointList = []
     cmds.select(d=True)
+    print parts
     
     jointNameR = 'pjnt_'+parts[0]
     jointNameE = 'pjnt_end_'+parts[0]
@@ -92,7 +88,7 @@ def createPJoints(parts, *args):
 
     jointList.append(pjntR)
     jointList.append(pjntE)
-
+    print "done"
     cmds.select(d=True)
     return jointList
 
@@ -121,9 +117,9 @@ def rigNode(userDefinedName, numParts, pParent, *args):
 
         cmds.parent(rNode, pParent)          
 
-        #lockAttrs=('.rx', '.ry', '.rz', '.sx', '.sy', '.sz')
-        #for attr in lockAttrs:
-            #cmds.setAttr(tform+attr, lock=True, keyable=False, channelBox=False)
+        lockAttrs=('.rx', '.ry', '.rz', '.sx', '.sy', '.sz')
+        for attr in lockAttrs:
+            cmds.setAttr(tform+attr, lock=True, keyable=False, channelBox=False)
 
         Parts_List.append(tform)
         
@@ -133,20 +129,17 @@ def rigNode(userDefinedName, numParts, pParent, *args):
 def rigNodeRoot(numParts, userDefinedName, *args):
     val = numParts+1
     pos = [0.0, val, 0.0]
+    print pos
     # Find all the existing RG_Part nodes in the scene
     parts = cmds.ls(et='RG_PartRoot')
     # Create a number suffix
     num = str(utils.findHighestTrailingNumber(parts, 'PartRoot'))
     # Create a transform
-    tform = cmds.createNode('transform', name=userDefinedName+'_PartRoot_' + num)
+    tform = cmds.createNode('transform', name='PartRoot_' + num)
     # Create an RG_Part node and parent to the transform
-    rNode = cmds.createNode ('RG_PartRoot', n=userDefinedName+'_PartRoot_Shape_' + num, p=tform)
+    rNode = cmds.createNode ('RG_PartRoot', n='PartRoot_Shape_' + num, p=tform)
     cmds.xform(tform, t=pos, ws=True)
     cmds.select(d=True)
-
-    # Make an attribute to store the number of parts
-    cmds.addAttr(tform, shortName='pc', longName='PartCount', defaultValue=1.0, minValue=1.0, maxValue=10000, k=True )
-    cmds.setAttr(tform+'.PartCount', numParts)
 
     return(rNode)
 
@@ -156,7 +149,6 @@ def rigNodeRoot(numParts, userDefinedName, *args):
 def matchTwistAngle(twistAttribute, ikJoints, targetJoints):
     currentVector = []
     targetVector = []
-    print ikJoints
     
     currentVector = calculateTwistVector(ikJoints[0], ikJoints[1], ikJoints[len(ikJoints)-1])
     targetVector = calculateTwistVector(targetJoints[0], targetJoints[1], targetJoints[len(targetJoints)-1])
@@ -232,14 +224,17 @@ def setupControlObject(control, ctrlName, ctrlAttrs, ctrlPos, ctrlPath, *args):
     ctrlGrp = 'grp_%s' % (ctrlName)
     cmds.rename('grp_control', ctrlGrp)
     cmds.rename('control', ctrlName)
-    # Move the control to the foot position
+    # Move the control to the  position
     cmds.xform('grp_%s' % (ctrlName), t=ctrlPos, ws=True)
     # Add the control attributes
+    print "Add Attr"
     if len(ctrlAttrs)!= 0:
+        print ctrlAttrs
+        print ctrlName
         cmds.select(ctrlName)
         for attr in ctrlAttrs:
             cmds.addAttr(shortName=attr, longName=attr, defaultValue=0, k=True)
-
+    print "Done"
     return ([ctrlGrp, ctrlName])
 
 
@@ -269,7 +264,8 @@ def collectLayoutInfo(sel, *args):
 
     return lytTmp
 
-        
+
+
 
 def createStretchyIk(control, ikHandleName, pvName, suffix, jnt_info, lyt_info, *args):  
     rootPos = cmds.xform(jnt_info[0], q=True, t=True, ws=True)
@@ -290,8 +286,8 @@ def createStretchyIk(control, ikHandleName, pvName, suffix, jnt_info, lyt_info, 
     disDim = cmds.distanceDimension(sp=(rootPos), ep=(endPos))
 
     cmds.rename('distanceDimension1', 'disDimNode_Stretch_' + suffix)
-    #cmds.rename('locator1', 'lctrDis_Root_' + suffix)
-    #cmds.rename('locator2', 'lctrDis_End_' + suffix)
+    cmds.rename('locator1', 'lctrDis_Root_' + suffix)
+    cmds.rename('locator2', 'lctrDis_End_' + suffix)
     # TODO: Need to save these for later
     # cmds.parent('lctrDis_hip', 'jnt_pelvis')
     cmds.parent('lctrDis_End_' + suffix, control[1])

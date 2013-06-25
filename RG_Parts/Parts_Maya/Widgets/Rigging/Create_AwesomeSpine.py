@@ -151,9 +151,19 @@ class Create_ASpine:
 
 
         cmds.rename(curveInfoNode, userDefinedName+'_curveInfo')
-        
-        
 
+        # Setup controls
+        suffix = userDefinedName 
+        ctrlAttrs = []
+        
+        for i in range(len(self.jnt_info['rootJnts'])):
+            ctrlName = userDefinedName + 'ctrl_' + str(i)
+            ctrlPos = cmds.xform(self.jnt_info['rootJnts'][i], q=True, ws=True, t=True)
+            # NOTE: Dynamically generate the control objects
+            spineControl = part_utils.setupControlObject("SpineControl.ma", ctrlName, ctrlAttrs, ctrlPos, os.environ['Parts_Maya_Controls'])
+            cmds.parentConstraint(spineControl, self.jnt_info['rootJnts'][i])
+        
+   
 
 
 

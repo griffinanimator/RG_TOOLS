@@ -52,11 +52,11 @@ class Create_Leg:
         # NOTE: Dynamically generate the control objects
         footControl = part_utils.setupControlObject("FootControl.ma", ctrlName, ctrlAttrs, lytObs[2][1], os.environ['Parts_Maya_Controls'])
         # NOTE: Try deleting the stupid lyt so the disDim node builds with locators
-        f = cmds.container('Test_container', q=True, nl=True)
-        for i in f:
-            try:
-                cmds.delete(i)
-            except: pass
+        #f = cmds.container('Leg_container', q=True, nl=True)
+        #for i in f:
+            #try:
+                #cmds.delete(i)
+            #except: pass
 
 
         # Create the stretchy ik chain
