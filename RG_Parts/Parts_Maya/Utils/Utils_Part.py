@@ -44,37 +44,43 @@ def createJoints(prefix, lytObs, *args):
     return ik_joints  
 
 def scStretchyIk(partList, partJoints, ikHandleName, *args):
-    print "StretchyIK"
+    # Empty list to store nodes generated in scStretchyIk
+    ikNodes = []
+
     cmds.select(d=True)
     pjntLen = len(partJoints)
-    print partJoints
 
     sjnt = partJoints[0]
     ejnt = partJoints[1]
     sjPos = cmds.xform(sjnt, q=True, t=True, ws=True)
     ejPos = cmds.xform(ejnt, q=True, t=True, ws=True)
     # Create the ik solver
-    ikh = cmds.ikHandle(n= ikHandleName, sj=sjnt, ee=ejnt, sol = "ikSCsolver")
+    ikH = cmds.ikHandle(n= ikHandleName, sj=sjnt, ee=ejnt, sol = "ikRPsolver")
+    cmds.setAttr(ikH[0] +'.visibility', 0)
     suffix = partJoints[0].partition('_')[2]
     # Stretch ----------------------------------------------------------
-    #Start by creating all of the nodes we will need for the stretch.
+ 
     mdEStretch = cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_EStretch_' + suffix)
     cmds.select(d=True)
+    # NOTE: I need to change disDim transform name
     disDim = cmds.distanceDimension(sp=(sjPos), ep=(ejPos))
+    cmds.setAttr('distanceDimension1.visibility', 0)
     cmds.connectAttr(disDim + '.distance', mdEStretch + '.input1X')
+    #cmds.rename('distanceDimension1', 'disDimNode_Stretch_Shape' + suffix)
+
+    
     cmds.rename('distanceDimension1', 'disDimNode_Stretch_' + suffix)
- 
+    
     # Determine the length of the joint chain in default position
     endLen = cmds.getAttr(partJoints[1] + '.ty')
 
     cmds.setAttr(mdEStretch + '.input2X', endLen)
-    print disDim
 
     #Finally, we output our new values into the translateX of the knee and ankle joints.
     cmds.connectAttr( mdEStretch + '.outputX', ejnt  + '.ty')
 
-    # Constrain the ikHandles to the part controls
-    #cmds.pointConstraint(partList[1], ikh)
+    ikNodes.append([ikH[0], mdEStretch, 'disDimNode_Stretch_' + suffix])
+    return ikNodes
 
 def createPJoints(parts, *args):
     jointList = []
@@ -135,9 +141,9 @@ def rigNodeRoot(numParts, userDefinedName, *args):
     # Create a number suffix
     num = str(utils.findHighestTrailingNumber(parts, 'PartRoot'))
     # Create a transform
-    tform = cmds.createNode('transform', name='PartRoot_' + num)
+    tform = cmds.createNode('transform', name=userDefinedName+'_PartRoot_' + num)
     # Create an RG_Part node and parent to the transform
-    rNode = cmds.createNode ('RG_PartRoot', n='PartRoot_Shape_' + num, p=tform)
+    rNode = cmds.createNode ('RG_PartRoot', n=userDefinedName+'_PartRoot_Shape_' + num, p=tform)
     cmds.xform(tform, t=pos, ws=True)
     cmds.select(d=True)
 
@@ -227,14 +233,12 @@ def setupControlObject(control, ctrlName, ctrlAttrs, ctrlPos, ctrlPath, *args):
     # Move the control to the  position
     cmds.xform('grp_%s' % (ctrlName), t=ctrlPos, ws=True)
     # Add the control attributes
-    print "Add Attr"
     if len(ctrlAttrs)!= 0:
         print ctrlAttrs
         print ctrlName
         cmds.select(ctrlName)
         for attr in ctrlAttrs:
             cmds.addAttr(shortName=attr, longName=attr, defaultValue=0, k=True)
-    print "Done"
     return ([ctrlGrp, ctrlName])
 
 

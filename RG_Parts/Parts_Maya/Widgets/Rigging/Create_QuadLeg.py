@@ -1,17 +1,18 @@
 import maya.cmds as cmds
 import os
 import pymel.core as pm
+import maya.mel as mel
 
 import Utils.Utils_Part as part_utils
 reload(part_utils)
 
-CLASS_NAME = "Create_Leg"
+CLASS_NAME = "Create_QuadLeg"
 
-TITLE = "Leg"
-DESCRIPTION = "Create a leg rig"
+TITLE = "QuadLeg"
+DESCRIPTION = "Create a quadruped leg rig"
 
 
-class Create_Leg:
+class Create_QuadLeg:
   
     def __init__(self):
         # Dictionary to store info about the layout object
@@ -31,16 +32,17 @@ class Create_Leg:
         # Create an rig joint chain
         self.jnt_info['rigJnts'] = part_utils.createJoints('rigj_', lytObs)
         # Create an ik joint chain
-    	self.jnt_info['ikJnts'] = part_utils.createJoints('ikj_', lytObs)
+        self.jnt_info['ikJnts'] = part_utils.createJoints('ikj_', lytObs)
+    	self.jnt_info['iksJnts'] = part_utils.createJoints('iksj_', lytObs)
         
         # Define names for components involved in ik setup
         userDefinedName = sel[0].partition('PartRoot_')[0]
-
+ 
         #ikHandleName = "ikHandle_%s_leg" % (side)
         ikHandleName = userDefinedName + 'ikh'
         #ctrlName = "ctrl_%s_leg" % (side)
         ctrlName = userDefinedName + 'ctrl'
-        
+
         #pvName = "pv_%s_leg" % (side)
         pvName = userDefinedName + 'pv_ctrl'
         #suffix = "%s_leg" % (side)
@@ -50,7 +52,7 @@ class Create_Leg:
         ctrlAttrs = ('twist', 'stretch', 'foot_roll', 'roll_break', 'foot_twist', 'foot_bank', 'pivot_posX', 'pivot_posZ', 'toe_flap', 'twist_offset')
         
         # NOTE: Dynamically generate the control objects
-        footControl = part_utils.setupControlObject("FootControl.ma", ctrlName, ctrlAttrs, lytObs[2][1], os.environ['Parts_Maya_Controls'])
+        footControl = part_utils.setupControlObject("FootControl.ma", ctrlName, ctrlAttrs, lytObs[3][1], os.environ['Parts_Maya_Controls'])
         # NOTE: Try deleting the stupid lyt so the disDim node builds with locators
         f = cmds.container('Leg_container', q=True, nl=True)
         for i in f:
@@ -67,10 +69,10 @@ class Create_Leg:
         for jnt in self.jnt_info['ikJnts']:
             pos = cmds.xform(jnt, q=True, t=True, ws=True)
             ikJntPos.append(pos)
-        self.foot_info['footInfo'] = self.setupRGFoot(suffix, footControl[1], ikJntPos, ikHandleName)
+        #self.foot_info['footInfo'] = self.setupRGFoot(suffix, footControl[1], ikJntPos, ikHandleName)
         
 
-    
+    """
     def setupRGFoot(self, suffix, footControl, ikJntPos, ikHandleName, *args):
         print 'In Setup Foot'
         newFootGrps = []
@@ -171,14 +173,15 @@ class Create_Leg:
         cmds.connectAttr(footControl+'.foot_bank', footGrps[0]+ '_' + suffix + '.rz')
 
 
-
+        """
     def createStretchyIk(self, footControl, ikHandleName, pvName, suffix, *args):  
         rootPos = cmds.xform(self.jnt_info['ikJnts'][0], q=True, t=True, ws=True)
         midPos = cmds.xform(self.jnt_info['ikJnts'][1], q=True, t=True, ws=True)
         endPos = cmds.xform(self.jnt_info['ikJnts'][2], q=True, t=True, ws=True)
         
         # Create the ik solver
-        cmds.ikHandle(n= ikHandleName, sj= self.jnt_info['ikJnts'][0], ee= self.jnt_info['ikJnts'][2], sol = "ikRPsolver")
+        mel.eval('ikSpringSolver')
+        cmds.ikHandle(n= ikHandleName, sj= self.jnt_info['ikJnts'][0], ee= self.jnt_info['ikJnts'][3], sol = "ikSpringSolver")
         
         # Stretch ----------------------------------------------------------
         #Start by creating all of the nodes we will need for the stretch.
@@ -227,6 +230,7 @@ class Create_Leg:
         #Finally, we output our new values into the translateX of the knee and ankle joints.
         cmds.connectAttr(mdKStretch + '.outputX', self.jnt_info['ikJnts'][1]+ '.tx')
         cmds.connectAttr( mdAStretch + '.outputX', self.jnt_info['ikJnts'][2] + '.tx')
+        
 
         # Create a pv ----------------------------------------------
         cmds.spaceLocator(n=pvName)
