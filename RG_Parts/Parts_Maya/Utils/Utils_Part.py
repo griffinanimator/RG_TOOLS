@@ -271,7 +271,7 @@ def collectLayoutInfo(sel, *args):
 
 
 
-def createStretchyIk(control, ikHandleName, pvName, suffix, jnt_info, lyt_info, *args):  
+def createStretchyIk(jnt_info, control, ikHandleName, pvName, suffix, *args):  
     rootPos = cmds.xform(jnt_info[0], q=True, t=True, ws=True)
     midPos = cmds.xform(jnt_info[1], q=True, t=True, ws=True)
     endPos = cmds.xform(jnt_info[2], q=True, t=True, ws=True)
