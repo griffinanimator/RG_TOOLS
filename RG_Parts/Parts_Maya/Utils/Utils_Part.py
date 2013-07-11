@@ -85,7 +85,6 @@ def scStretchyIk(partList, partJoints, ikHandleName, *args):
 def createPJoints(parts, *args):
     jointList = []
     cmds.select(d=True)
-    print parts
     
     jointNameR = 'pjnt_'+parts[0]
     jointNameE = 'pjnt_end_'+parts[0]
@@ -124,8 +123,8 @@ def rigNode(userDefinedName, numParts, pParent, *args):
         cmds.parent(rNode, pParent)          
 
         lockAttrs=('.rx', '.ry', '.rz', '.sx', '.sy', '.sz')
-        for attr in lockAttrs:
-            cmds.setAttr(tform+attr, lock=True, keyable=False, channelBox=False)
+        #for attr in lockAttrs:
+            #cmds.setAttr(tform+attr, lock=True, keyable=False, channelBox=False)
 
         Parts_List.append(tform)
         
@@ -135,7 +134,6 @@ def rigNode(userDefinedName, numParts, pParent, *args):
 def rigNodeRoot(numParts, userDefinedName, *args):
     val = numParts+1
     pos = [0.0, val, 0.0]
-    print pos
     # Find all the existing RG_Part nodes in the scene
     parts = cmds.ls(et='RG_PartRoot')
     # Create a number suffix

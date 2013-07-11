@@ -88,19 +88,21 @@ class PartParam_UI:
 
                 # Connect ikHnadles, parts, and joints
                 ptca =cmds.pointConstraint(partList[0], partJoint[0], mo=True)
-                cmds.connectAttr(partJoint[0] + '.rotate', partList[0] +'.rotateAxis')
+                #cmds.connectAttr(partJoint[0] + '.rotate', partList[0] +'.rotateAxis')
+                
                 #cmds.parent(partJoint[0], partList[0])
                 ptcb = cmds.pointConstraint(partList[1], ikInfo[0][0])
 
                 contained_nodes.append(ptca[0])
                 contained_nodes.append(ptcb[0])
+            if p != 0:
+                cmds.aimConstraint(parts[p], parts[p-1])
 
         # Cleanup nodes and add to a container.
-        print contained_nodes
+        
         containerName = (userDefinedName+'_container')
         con1 = cmds.container(n=containerName)
         for i in contained_nodes:
-            print i
             cmds.container(containerName, edit=True, addNode=i, inc=True, ish=True, ihb=True, iha=True)
 
 

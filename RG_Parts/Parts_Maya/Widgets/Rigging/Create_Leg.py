@@ -60,7 +60,8 @@ class Create_Leg:
 
 
         # Create the stretchy ik chain
-        ikInfo = self.createStretchyIk(footControl, ikHandleName, pvName, suffix)
+        ikInfo = part_utils.createStretchyIk(self.jnt_info['ikJnts'], footControl, ikHandleName, pvName, suffix)
+        
         
         # Setup the ik foot
         ikJntPos = []
@@ -97,7 +98,6 @@ class Create_Leg:
 
         # Make Ik Handles
         ikBall = cmds.ikHandle(n= "ikh_ball_" + suffix, sj= self.jnt_info['ikJnts'][2], ee= self.jnt_info['ikJnts'][3], sol = "ikSCsolver")
-        print self.jnt_info['ikJnts']
         ikToe = cmds.ikHandle(n= "ikh_toe_" + suffix, sj=  self.jnt_info['ikJnts'][3], ee= self.jnt_info['ikJnts'][4], sol = "ikSCsolver")
         # Create the foot groups
         footGrps = ('grp_footPivot', 'grp_heel', 'grp_toe', 'grp_ball', 'grp_flap')

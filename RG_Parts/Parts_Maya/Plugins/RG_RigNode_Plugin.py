@@ -96,8 +96,8 @@ class RigNode(OpenMayaMPx.MPxLocatorNode):
                 
                 multiplier = sizeVal.asCentimeters()
                 
-                corner1 = OpenMaya.MPoint(-0.17, 0.0, -0.7)
-                corner2 = OpenMaya.MPoint(0.17, 0.0, 0.3)
+                corner1 = OpenMaya.MPoint(-0.5, 0.0, 0.5)
+                corner2 = OpenMaya.MPoint(0.5, 0.0, -0.5)
                 
                 corner1 = corner1 * multiplier
                 corner2 = corner2 * multiplier
