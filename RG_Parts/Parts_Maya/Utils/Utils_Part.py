@@ -7,9 +7,6 @@ reload(utils)
 
 def createJoints(prefix, lytObs, *args):
     print "CreateJoints"
-    print prefix
-
-
     cmds.select(d=True)
 
     ik_joints = []
@@ -232,8 +229,6 @@ def setupControlObject(control, ctrlName, ctrlAttrs, ctrlPos, ctrlPath, *args):
     cmds.xform('grp_%s' % (ctrlName), t=ctrlPos, ws=True)
     # Add the control attributes
     if len(ctrlAttrs)!= 0:
-        print ctrlAttrs
-        print ctrlName
         cmds.select(ctrlName)
         for attr in ctrlAttrs:
             cmds.addAttr(shortName=attr, longName=attr, defaultValue=0, k=True)
@@ -254,28 +249,30 @@ def collectLayoutInfo(sel, *args):
 
     # NOTE:  Check this is the root.  I will probably do this with scriptJob widget detection
 
-    rel = cmds.listRelatives(sel, ad=True, type="transform")
+    rel = cmds.listRelatives(sel, c=True, ni=True, type="transform")
     relLen = len(rel)
     for i in range(len(rel)):
-        pos = cmds.xform(rel[i], q=True, ws=True, t=True)
-        # NOTE:  This seems to work at the moment, but I want to force the order.
-        if i == 0:
-            lytTmp.append([rel[i], pos, 'None'])
-        else:
-            lytTmp.append([rel[i], pos, rel[i-1]])
+        if cmds.nodeType(rel[i]) != 'aimConstraint':
+            pos = cmds.xform(rel[i], q=True, ws=True, t=True)
+            # NOTE:  This seems to work at the moment, but I want to force the order.
+            if i == 0:
+                lytTmp.append([rel[i], pos, 'None'])
+            else:
+                lytTmp.append([rel[i], pos, rel[i-1]])
 
     return lytTmp
 
 
 
 
-def createStretchyIk(jnt_info, control, ikHandleName, pvName, suffix, *args):  
-    rootPos = cmds.xform(jnt_info[0], q=True, t=True, ws=True)
-    midPos = cmds.xform(jnt_info[1], q=True, t=True, ws=True)
-    endPos = cmds.xform(jnt_info[2], q=True, t=True, ws=True)
+def createStretchyIk(ikjnt_info, rjnt_info, control, ikHandleName, pvName, suffix, *args): 
+
+    rootPos = cmds.xform(ikjnt_info[0], q=True, t=True, ws=True)
+    midPos = cmds.xform(ikjnt_info[1], q=True, t=True, ws=True)
+    endPos = cmds.xform(ikjnt_info[2], q=True, t=True, ws=True)
     
     # Create the ik solver
-    cmds.ikHandle(n= ikHandleName, sj=jnt_info[0], ee=jnt_info[2], sol = "ikRPsolver")
+    cmds.ikHandle(n= ikHandleName, sj=ikjnt_info[0], ee=ikjnt_info[2], sol = "ikRPsolver")
     
     # Stretch ----------------------------------------------------------
     #Start by creating all of the nodes we will need for the stretch.
@@ -284,6 +281,7 @@ def createStretchyIk(jnt_info, control, ikHandleName, pvName, suffix, *args):
     mdLStretch = cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_RStretch_' + suffix)
     mdKStretch = cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_MStretch_' + suffix)
     mdAStretch = cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_EStretch_' + suffix)
+    pmaStretchBend = cmds.shadingNode("plusMinusAverage", asUtility=True, n='pmaNode_stretchBend_' + suffix)
     cmds.select(d=True)
     disDim = cmds.distanceDimension(sp=(rootPos), ep=(endPos))
 
@@ -295,8 +293,8 @@ def createStretchyIk(jnt_info, control, ikHandleName, pvName, suffix, *args):
     cmds.parent('lctrDis_End_' + suffix, control[1])
 
     # Determine the length of the joint chain in default position
-    rootLen = cmds.getAttr(jnt_info[1] + '.tx')
-    endLen = cmds.getAttr(jnt_info[2] + '.tx')
+    rootLen = cmds.getAttr(ikjnt_info[1] + '.tx')
+    endLen = cmds.getAttr(ikjnt_info[2] + '.tx')
     chainLen = (rootLen + endLen)
 
     cmds.setAttr(adlStretch + '.input2', chainLen)
@@ -313,14 +311,20 @@ def createStretchyIk(jnt_info, control, ikHandleName, pvName, suffix, *args):
     # Connect the distance dimension so we always know the current length of the leg.
     cmds.connectAttr('disDimNode_Stretch_' + suffix +'.distance', clmpStretch + '.inputR')
 
+    # Connect the Stretch_Bend to pma_stretchBend
+    cmds.setAttr(pmaStretchBend + '.input1D[0]', chainLen)
+    cmds.connectAttr(control[1]+'.stretch_bend', pmaStretchBend + '.input1D[1]')
+    cmds.connectAttr(pmaStretchBend + '.output1D', mdLStretch + '.input2X')
+
+
     #Now we feed the total value into a multiply divide so we can distribute the value to our joints.
     cmds.connectAttr(clmpStretch + '.outputR', mdLStretch + '.input1X')
     cmds.connectAttr(mdLStretch + '.outputX', mdKStretch + '.input1X')
     cmds.connectAttr(mdLStretch + '.outputX', mdAStretch + '.input1X')
 
     #Finally, we output our new values into the translateX of the knee and ankle joints.
-    cmds.connectAttr(mdKStretch + '.outputX', jnt_info[1]+ '.tx')
-    cmds.connectAttr( mdAStretch + '.outputX', jnt_info[2] + '.tx')
+    cmds.connectAttr(mdKStretch + '.outputX', ikjnt_info[1]+ '.tx')
+    cmds.connectAttr( mdAStretch + '.outputX', ikjnt_info[2] + '.tx')
 
     # Create a pv ----------------------------------------------
     cmds.spaceLocator(n=pvName)
@@ -347,13 +351,37 @@ def createStretchyIk(jnt_info, control, ikHandleName, pvName, suffix, *args):
     cmds.connectAttr(mDivTwst+'.input1Y', pmaTwist+'.input1D[1]')
 
     # Calculate twist offset
-    """
-    blueprintJoints = []
-    for obj in lyt_info:
-        blueprintJoints.append(obj[0])
-    offset = matchTwistAngle(ikHandleName+".twist", jnt_info, blueprintJoints)
+    
+    # Calculate twist offset
+    offset = matchTwistAngle(ikHandleName+".twist", ikjnt_info, rjnt_info)
     # Make a buffer between the control and the ik twist
     cmds.setAttr(control[1]+'.twist_offset', offset)
     cmds.connectAttr(control[1]+'.twist_offset', pmaTwist+'.input1D[2]')
     cmds.connectAttr(pmaTwist+'.output1D', ikHandleName+'.twist')
-    """
+
+def connectJointChains(parents, children):
+    constraints = []
+    for j in range(len(parents)):
+        #pcon_name = ('pcon_' + children[j].partition('_')[2] )
+        bcNodeT = cmds.shadingNode("blendColor", asUtility=True, n='bcNodeT_switch_' + suffix)
+        bcNodeR = cmds.shadingNode("blendColor", asUtility=True, n='bcNodeR_switch_' + suffix)
+        cmds.connectAttr(parents + '.translate', bcNodeT + '.color1')
+        #constraint = cmds.parentConstraint(parents[j], children[j], n=pcon_name, mo=True)
+        #constraints.append(constraint)
+    return constraints
+
+def connectThroughBC(parentsA, parentsB, children, suffix):
+    constraints = []
+    for j in range(len(children)):
+        bcNodeT = cmds.shadingNode("blendColors", asUtility=True, n='bcNodeT_switch_' + suffix)
+        bcNodeR = cmds.shadingNode("blendColors", asUtility=True, n='bcNodeR_switch_' + suffix)
+        constraints.append([bcNodeT, bcNodeR])
+        # Input Parents
+        cmds.connectAttr(parentsA[j] + '.translate', bcNodeT + '.color1')
+        cmds.connectAttr(parentsB[j] + '.translate', bcNodeT + '.color2')
+        cmds.connectAttr(parentsA[j] + '.rotate', bcNodeR + '.color1')
+        cmds.connectAttr(parentsB[j] + '.rotate', bcNodeR + '.color2')
+        # Output to Children
+        cmds.connectAttr(bcNodeT + '.output', children[j] + '.translate')
+        cmds.connectAttr(bcNodeR + '.output', children[j] + '.rotate')
+    return constraints

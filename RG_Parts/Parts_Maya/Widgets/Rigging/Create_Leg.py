@@ -32,12 +32,15 @@ class Create_Leg:
         self.jnt_info['rigJnts'] = part_utils.createJoints('rigj_', lytObs)
         # Create an ik joint chain
     	self.jnt_info['ikJnts'] = part_utils.createJoints('ikj_', lytObs)
-        
+        # Create an fk joint chain
+        self.jnt_info['fkJnts'] = part_utils.createJoints('fkj_', lytObs)
+      
         # Define names for components involved in ik setup
         userDefinedName = sel[0].partition('PartRoot_')[0]
 
         #ikHandleName = "ikHandle_%s_leg" % (side)
         ikHandleName = userDefinedName + 'ikh'
+        
         #ctrlName = "ctrl_%s_leg" % (side)
         ctrlName = userDefinedName + 'ctrl'
         
@@ -46,8 +49,14 @@ class Create_Leg:
         #suffix = "%s_leg" % (side)
         suffix = userDefinedName 
 
+        # Connect the ik and fk joints to the rig joints
+        constraints = part_utils.connectThroughBC(self.jnt_info['fkJnts'], self.jnt_info['ikJnts'], self.jnt_info['rigJnts'], suffix)
+        self.jnt_info['bcNodes'] = constraints
+        #constraints = part_utils.connectJointChains(self.jnt_info['ikJnts'], self.jnt_info['rigJnts'])
+        #self.jnt_info['ikConstraints'] = constraints
+
         # Define foot attribute names
-        ctrlAttrs = ('twist', 'stretch', 'foot_roll', 'roll_break', 'foot_twist', 'foot_bank', 'pivot_posX', 'pivot_posZ', 'toe_flap', 'twist_offset')
+        ctrlAttrs = ('twist', 'stretch', 'stretch_bend', 'foot_roll', 'roll_break', 'foot_twist', 'foot_bank', 'pivot_posX', 'pivot_posZ', 'toe_flap', 'twist_offset', 'ik_fk')
         
         # NOTE: Dynamically generate the control objects
         footControl = part_utils.setupControlObject("FootControl.ma", ctrlName, ctrlAttrs, lytObs[2][1], os.environ['Parts_Maya_Controls'])
@@ -60,7 +69,7 @@ class Create_Leg:
 
 
         # Create the stretchy ik chain
-        ikInfo = part_utils.createStretchyIk(self.jnt_info['ikJnts'], footControl, ikHandleName, pvName, suffix)
+        ikInfo = part_utils.createStretchyIk(self.jnt_info['ikJnts'], self.jnt_info['rigJnts'], footControl, ikHandleName, pvName, suffix)
         
         
         # Setup the ik foot
@@ -69,11 +78,36 @@ class Create_Leg:
             pos = cmds.xform(jnt, q=True, t=True, ws=True)
             ikJntPos.append(pos)
         self.foot_info['footInfo'] = self.setupRGFoot(suffix, footControl[1], ikJntPos, ikHandleName)
-        
+
+
+        # Setup the FK controls
+        ctrlAttrs = ('stretch', 'size')
+        fkControls = []
+        for i in range(len(self.jnt_info['fkJnts'])):
+            ctrlName = self.jnt_info['fkJnts'][i].replace('fkj_', 'ctrl_')
+            ctrlPos = cmds.xform(self.jnt_info['fkJnts'][i], q=True, ws=True, t=True)
+            ctrlRot = cmds.xform(self.jnt_info['fkJnts'][i], q=True, ws=True, ro=True)
+
+            fkControl = part_utils.setupControlObject("SphereControl.ma", ctrlName, ctrlAttrs, ctrlPos, os.environ['Parts_Maya_Controls'])
+            fkControls.append(fkControl)
+
+            cmds.xform(fkControl[0], ws=True, t=ctrlPos)
+            cmds.xform(fkControl[0], ws=True, ro=ctrlRot)
+            cmds.parentConstraint(fkControl[1], self.jnt_info['fkJnts'][i], mo=True)
+
+        for i in range(len(fkControls)):
+            if i !=0:
+                cmds.parent(fkControls[i][0], fkControls[i-1][1])
+                cmds.setAttr(fkControls[i][1]+'.size', 1)
+                cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleX')
+                cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleY')
+                cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleZ')
+
 
     
     def setupRGFoot(self, suffix, footControl, ikJntPos, ikHandleName, *args):
         print 'In Setup Foot'
+        # NOTE:  Add all created nodes to a list.
         newFootGrps = []
         # Create utility nodes
         conBRoll = cmds.shadingNode("condition", asUtility=True, n='conNode_ballRoll_' + suffix)
@@ -170,92 +204,10 @@ class Create_Leg:
         cmds.connectAttr(footControl+'.foot_twist', footGrps[0]+ '_' + suffix + '.ry')
         cmds.connectAttr(footControl+'.foot_bank', footGrps[0]+ '_' + suffix + '.rz')
 
+        # Hookup ik fk switch
+        for i in range(len(self.jnt_info['bcNodes'])):
+            for node in self.jnt_info['bcNodes'][i]:
+                cmds.connectAttr(footControl +'.ik_fk', node + '.blender' )
 
 
-    def createStretchyIk(self, footControl, ikHandleName, pvName, suffix, *args):  
-        rootPos = cmds.xform(self.jnt_info['ikJnts'][0], q=True, t=True, ws=True)
-        midPos = cmds.xform(self.jnt_info['ikJnts'][1], q=True, t=True, ws=True)
-        endPos = cmds.xform(self.jnt_info['ikJnts'][2], q=True, t=True, ws=True)
-        
-        # Create the ik solver
-        cmds.ikHandle(n= ikHandleName, sj= self.jnt_info['ikJnts'][0], ee= self.jnt_info['ikJnts'][2], sol = "ikRPsolver")
-        
-        # Stretch ----------------------------------------------------------
-        #Start by creating all of the nodes we will need for the stretch.
-        adlStretch = cmds.shadingNode("addDoubleLinear", asUtility=True, n='adlNode_RStretch_' + suffix)
-        clmpStretch = cmds.shadingNode("clamp", asUtility=True, n='clampNode_Stretch_' + suffix)
-        mdLStretch = cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_RStretch_' + suffix)
-        mdKStretch = cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_MStretch_' + suffix)
-        mdAStretch = cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_EStretch_' + suffix)
 
-        
-        # NOTE: DisDim nodes are wacky.  Can I use something else?
-
-        cmds.select(d=True)
-        disDim = cmds.distanceDimension(sp=(rootPos), ep=(endPos))
-        cmds.rename('distanceDimension1', 'disDimNode_Stretch_' + suffix)
-        cmds.rename('locator1', 'lctrDis_Root_' + suffix)
-        cmds.rename('locator2', 'lctrDis_End_' + suffix)
-        # TODO: Need to save these for later
-        # cmds.parent('lctrDis_hip', 'jnt_pelvis')
-        cmds.parent('lctrDis_End_' + suffix, footControl[1])
-
-        # Determine the length of the joint chain in default position
-        rootLen = cmds.getAttr(self.jnt_info['ikJnts'][1] + '.tx')
-        endLen = cmds.getAttr(self.jnt_info['ikJnts'][2] + '.tx')
-        chainLen = (rootLen + endLen)
-  
-        cmds.setAttr(adlStretch + '.input2', chainLen)
-        cmds.setAttr(mdLStretch + '.input2X', chainLen)
-        cmds.setAttr(mdKStretch + '.input2X', rootLen)
-        cmds.setAttr(mdAStretch + '.input2X', endLen)
-
-        # The clamp node lets us control the amount of stretch.
-        cmds.connectAttr(footControl[1] + '.stretch', adlStretch + '.input1')
-        cmds.connectAttr(adlStretch + '.output', clmpStretch + '.maxR')
-        cmds.setAttr (clmpStretch + '.minR', chainLen)
-        cmds.setAttr (mdLStretch + '.operation',  2)
-
-        # Connect the distance dimension so we always know the current length of the leg.
-        cmds.connectAttr('disDimNode_Stretch_' + suffix +'.distance', clmpStretch + '.inputR')
-
-        #Now we feed the total value into a multiply divide so we can distribute the value to our joints.
-        cmds.connectAttr(clmpStretch + '.outputR', mdLStretch + '.input1X')
-        cmds.connectAttr(mdLStretch + '.outputX', mdKStretch + '.input1X')
-        cmds.connectAttr(mdLStretch + '.outputX', mdAStretch + '.input1X')
-
-        #Finally, we output our new values into the translateX of the knee and ankle joints.
-        cmds.connectAttr(mdKStretch + '.outputX', self.jnt_info['ikJnts'][1]+ '.tx')
-        cmds.connectAttr( mdAStretch + '.outputX', self.jnt_info['ikJnts'][2] + '.tx')
-
-        # Create a pv ----------------------------------------------
-        cmds.spaceLocator(n=pvName)
-        cmds.xform(pvName, t=rootPos, ws=True)
-        # Pv constrain the ik
-        cmds.poleVectorConstraint (pvName, ikHandleName, weight=1)
-        cmds.select(d=True)
-
-        #Create a plusMinusAverage utility
-        #Create a multiplyDivide utility
-        pmaTwist = cmds.shadingNode("plusMinusAverage", asUtility=True, n='pmaNode_twist_' + suffix)
-        # Set PMA to subtract
-        cmds.setAttr(pmaTwist + ".operation", 2)
-        mDivTwst =  cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_twist_' + suffix)
-
-        cmds.connectAttr(footControl[1]+'.twist', mDivTwst+'.input1X')
-        cmds.connectAttr(footControl[1]+'.ry', mDivTwst+'.input1Y')
-        # TODO: I need a pelvis or a better solution
-        #cmds.connectAttr('jnt_pelvis.ry', 'mdNode_LegTwist.input1Z')
-        cmds.setAttr(mDivTwst+'.input2X', -1)
-        cmds.setAttr(mDivTwst+'.input2Y', -1)
-        cmds.setAttr(mDivTwst+'.input2Z', -1)
-        cmds.connectAttr(mDivTwst+'.input1X', pmaTwist+'.input1D[0]')
-        cmds.connectAttr(mDivTwst+'.input1Y', pmaTwist+'.input1D[1]')
-
-        # Calculate twist offset
-        offset = part_utils.matchTwistAngle(ikHandleName+".twist", self.jnt_info['ikJnts'], self.jnt_info['rigJnts'])
-        # Make a buffer between the control and the ik twist
-        cmds.setAttr(footControl[1]+'.twist_offset', offset)
-        cmds.connectAttr(footControl[1]+'.twist_offset', pmaTwist+'.input1D[2]')
-        cmds.connectAttr(pmaTwist+'.output1D', ikHandleName+'.twist')
-        
