@@ -2,7 +2,7 @@ import maya.cmds as cmds
 import os
 from functools import partial
 import Utils.Utils_File as fileUtils
-#NOET: Remove this import!
+#NOTE: Remove this import!
 import Utils.Utils_Part as Utils_Part
 reload(Utils_Part)
 class PartParam_UI:
@@ -17,53 +17,62 @@ class PartParam_UI:
         if cmds.window(self.windowName, exists=True):
             cmds.deleteUI(self.windowName)
         """ Define UI elements width and height """    
-        self.windowWidth = 200
-        self.windowHeight = 400
+        self.windowWidth = 380
+        self.windowHeight = 120
         self.rowHeight = 40
-        buttonWidth = 100
-        buttonHeight = 40
+        buttonWidth = 80
+        buttonHeight = 22
 
         """ Define a window"""
-        self.UIElements["window"] = cmds.window(self.windowName, width=self.windowWidth, height=self.windowHeight, title="Window", sizeable=True)
+        self.UIElements["window"] = cmds.window(self.windowName, width=self.windowWidth, height=self.windowHeight, title="Layout UI", sizeable=True)
         
         self.UIElements["guiFlowLayout1"] = cmds.flowLayout(v=True, width=self.windowWidth, height=self.windowHeight, bgc=[0.2, 0.2, 0.2])
-       
-        """ Edit and Create botton row """
-        self.UIElements["guiFlowLayout2"] = cmds.flowLayout(v=False, width=self.windowWidth, height=self.rowHeight, bgc=[0.4, 0.4, 0.4])
+        
+        """ Button Row """
+        cmds.separator( height=5, style='in' )
+        self.UIElements["guiFlowLayout3"] = cmds.flowLayout(v=False, width=self.windowWidth, height=buttonHeight, bgc=[0.4, 0.4, 0.4], cs=10)
         cmds.setParent(self.UIElements["guiFlowLayout1"])
-        self.UIElements["edit_button"] = cmds.button(label="Edit", width=buttonWidth, height=buttonHeight, p=self.UIElements["guiFlowLayout2"])
-        self.UIElements["createbutton"] = cmds.button(label="Create", width=buttonWidth, height=buttonHeight, p=self.UIElements["guiFlowLayout2"], command=self.createPart)
 
-        """ Name Row """
-        self.UIElements["guiFlowLayout3"] = cmds.flowLayout(v=False, width=self.windowWidth, height=self.rowHeight, bgc=[0.4, 0.4, 0.4])
+        """ Read from an external file to get the available widgets """
+        import Utils.Utils_Csv as csvUtils
+        reload(csvUtils)
+
+        path = 'Z:/RG_Parts/Parts_Maya/Widgets/Layout/Layout_Defs.csv'
+        csvInfo = csvUtils.csvRead(path)
+        cmds.separator( height=5, style='in' )
+        self.UIElements["wsel_menu"] = cmds.optionMenu(label="Widgets", bgc=[1.0, 1.0, 1.0],p=self.UIElements["guiFlowLayout3"])
+        for i in csvInfo:
+            numItems = len(i[1])
+            print numItems
+            self.UIElements[i[0] + "_item"] = cmds.menuItem(label=i[0], ann=numItems)
+
+        self.UIElements["side_menu"] = cmds.optionMenu(label="Side", bgc=[1.0, 1.0, 1.0],p=self.UIElements["guiFlowLayout3"])
+        cmds.popupMenu( button=1 )
+        menuItems = ('left', 'right', 'center')
+        for i in menuItems:
+            self.UIElements[i + "_item"] = cmds.menuItem(label=i)
+
+        self.UIElements["untext_field"] = cmds.textField(tx="User Defined Name", width=buttonWidth+40, height=22, bgc=[1.0, 1.0, 1.0],p=self.UIElements["guiFlowLayout3"])
+
+
+        """ Button Row 2 """
+        cmds.separator( height=20, style='in' )
+        self.UIElements["guiFlowLayout4"] = cmds.flowLayout(v=False, width=self.windowWidth, height=self.rowHeight, bgc=[0.4, 0.4, 0.4], cs=10)
         cmds.setParent(self.UIElements["guiFlowLayout1"])
-        self.UIElements["name_text"] = cmds.textField(tx="Test", width=buttonWidth, height=buttonHeight, bgc=[1.0, 1.0, 1.0],p=self.UIElements["guiFlowLayout3"])
-
-
-        """ NumParts Row """
-        self.UIElements["guiFlowLayout4"] = cmds.flowLayout(v=False, width=self.windowWidth, height=self.rowHeight, bgc=[0.4, 0.4, 0.4])
-        cmds.setParent(self.UIElements["guiFlowLayout1"])
-        self.UIElements["num_text"] = cmds.intField( minValue=3, maxValue=10, step=1,  width=buttonWidth, height=buttonHeight, bgc=[1.0, 1.0, 1.0], p=self.UIElements["guiFlowLayout4"])
-                                        
-        """ Orientation Row """
-        self.UIElements["guiFlowLayout5"] = cmds.flowLayout(v=False, width=self.windowWidth, height=self.rowHeight, bgc=[0.4, 0.4, 0.4])
-        cmds.setParent(self.UIElements["guiFlowLayout1"])
-        self.UIElements["radio_grp1"] = cmds.radioButtonGrp( label='Orientation', labelArray3=['X', 'Y', 'Z'], width=110, numberOfRadioButtons=3, adj=1,  p=self.UIElements["guiFlowLayout5"] )
-
-        """ Generate and Mirror Row """
-        self.UIElements["guiFlowLayout6"] = cmds.flowLayout(v=False, width=self.windowWidth, height=self.rowHeight, bgc=[0.4, 0.4, 0.4])
-        cmds.setParent(self.UIElements["guiFlowLayout1"])
-        self.UIElements["generate_button"] = cmds.button(label="Generate", width=buttonWidth, height=buttonHeight, p=self.UIElements["guiFlowLayout6"])
-        self.UIElements["mirror_button"] = cmds.button(label="Mirror", width=buttonWidth, height=buttonHeight, p=self.UIElements["guiFlowLayout6"])
-
+        self.UIElements["create_button"] = cmds.button(label='Create', width=buttonWidth, height=buttonHeight, bgc=[1.0, 1.0, 1.0], p=self.UIElements["guiFlowLayout4"], command=self.createPart) 
+        self.UIElements["edit_button"] = cmds.button(label='Edit', width=buttonWidth, height=buttonHeight, bgc=[1.0, 1.0, 1.0], p=self.UIElements["guiFlowLayout4"]) 
+        self.UIElements["mirror_button"] = cmds.button(label='Mirror', width=buttonWidth, height=buttonHeight, bgc=[1.0, 1.0, 1.0], p=self.UIElements["guiFlowLayout4"])               
         cmds.showWindow(self.windowName)
 
     def createPart(self, *args):
         contained_nodes = []
         # Collect info from the UI to build part
-        userDefinedName = cmds.textField(self.UIElements["name_text"], q=True, text=True)
+        userDefinedName = cmds.textField(self.UIElements["untext_field"], q=True, text=True)
 
-        numParts = cmds.intField(self.UIElements["num_text"], q=True, v=True)
+        menuItem = cmds.optionMenu(self.UIElements["wsel_menu"], q=True, v=True)
+        print menuItem
+        numParts = len(cmds.menuItem(self.UIElements[menuItem + "_item"], q=True, ann=True))
+        print numParts
 
         partRoot = Utils_Part.rigNodeRoot(numParts, userDefinedName)
         contained_nodes.append(partRoot)
