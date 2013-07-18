@@ -16,7 +16,6 @@ def createJoints(prefix, lytObs, *args):
             item[1] will be the position
             item[2] will be the parent        
         """
-        print item[0]
         newJointName = prefix+item[0]
 
         cmds.select(d=True)
@@ -57,29 +56,31 @@ def scStretchyIk(partList, partJoints, ikHandleName, *args):
     suffix = partJoints[0].partition('_')[2]
     # Stretch ----------------------------------------------------------
  
-    mdEStretch = cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_EStretch_' + suffix)
+    #mdEStretch = cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_EStretch_' + suffix)
     cmds.select(d=True)
     # NOTE: I need to change disDim transform name
-    disDim = cmds.distanceDimension(sp=(sjPos), ep=(ejPos))
-    cmds.setAttr('distanceDimension1.visibility', 0)
-    cmds.connectAttr(disDim + '.distance', mdEStretch + '.input1X')
+    #disDim = cmds.distanceDimension(sp=(sjPos), ep=(ejPos))
+    #cmds.setAttr('distanceDimension1.visibility', 0)
+    #cmds.connectAttr(disDim + '.distance', mdEStretch + '.input1X')
     #cmds.rename('distanceDimension1', 'disDimNode_Stretch_Shape' + suffix)
 
     
-    cmds.rename('distanceDimension1', 'disDimNode_Stretch_' + suffix)
+    #mds.rename('distanceDimension1', 'disDimNode_Stretch_' + suffix)
     
     # Determine the length of the joint chain in default position
-    endLen = cmds.getAttr(partJoints[1] + '.ty')
+    #endLen = cmds.getAttr(partJoints[1] + '.ty')
 
-    cmds.setAttr(mdEStretch + '.input2X', endLen)
+    #cmds.setAttr(mdEStretch + '.input2X', endLen)
 
     #Finally, we output our new values into the translateX of the knee and ankle joints.
-    cmds.connectAttr( mdEStretch + '.outputX', ejnt  + '.ty')
+    #cmds.connectAttr( mdEStretch + '.outputX', ejnt  + '.ty')
 
-    ikNodes.append([ikH[0], mdEStretch, 'disDimNode_Stretch_' + suffix])
+    #ikNodes.append([ikH[0], mdEStretch, 'disDimNode_Stretch_' + suffix])
+    ikNodes.append([ikH[0]])
     return ikNodes
 
 def createPJoints(parts, *args):
+
     jointList = []
     cmds.select(d=True)
     
@@ -90,32 +91,26 @@ def createPJoints(parts, *args):
 
     jointList.append(pjntR)
     jointList.append(pjntE)
-    print "done"
     cmds.select(d=True)
     return jointList
 
 
-def rigNode(userDefinedName, numParts, pParent, *args):
-
+def rigNode(userDefinedName, numParts, pParent, pos, num, *args):
     Parts_List=[]
     for i in range(numParts):
-        # NOTE: Crappy attempt at position.  Fix this!!!
         val = numParts
-        pos = [0.0, val-i, 0.0]
-        # Find all the existing RG_Part nodes in the scene
-        parts = cmds.ls(et='RG_Part')
-        # Create a number suffix
-        tformName = userDefinedName+'_Part_' + str(i)
-   
+        p = pos[i]
+
+        name = userDefinedName + '_' + 'Part_Shape_' + str(i)
+
         # Create a transform
-        tform = cmds.createNode("transform", n=tformName )       
+        tform = cmds.createNode("transform", n=name.replace('_Shape', '') )       
 
         # Create an RG_Part node and parent to the transform
-        rnodeName = userDefinedName+'_Part_Shape_' + str(i)
-        rNode = cmds.createNode('RG_Part', p=tform, n=rnodeName)
+        rNode = cmds.createNode('RG_Part', p=tform, n=name)
         
         cmds.select(d=True)
-        cmds.xform(tform, t=pos)
+        cmds.xform(tform, t=p)
 
         cmds.parent(rNode, pParent)          
 
@@ -128,21 +123,19 @@ def rigNode(userDefinedName, numParts, pParent, *args):
         cmds.select(d=True)
     return Parts_List
 
-def rigNodeRoot(numParts, userDefinedName, *args):
+def rigNodeRoot(numParts, userDefinedName, pos, num, *args):
+
     val = numParts+1
-    pos = [0.0, val, 0.0]
-    # Find all the existing RG_Part nodes in the scene
-    parts = cmds.ls(et='RG_PartRoot')
-    # Create a number suffix
-    num = str(utils.findHighestTrailingNumber(parts, 'PartRoot'))
     # Create a transform
-    tform = cmds.createNode('transform', name=userDefinedName+'_PartRoot_' + num)
+    name = userDefinedName + '_' + 'PartRoot_Shape_' + num
+
+    tform = cmds.createNode('transform', name=name.replace('_Shape', ''))
     # Create an RG_Part node and parent to the transform
-    rNode = cmds.createNode ('RG_PartRoot', n=userDefinedName+'_PartRoot_Shape_' + num, p=tform)
+    rNode = cmds.createNode ('RG_PartRoot', n=name, p=tform)
     cmds.xform(tform, t=pos, ws=True)
     cmds.select(d=True)
 
-    return(rNode)
+    return(tform)
 
 
 
@@ -283,11 +276,16 @@ def createStretchyIk(ikjnt_info, rjnt_info, control, ikHandleName, pvName, suffi
     mdAStretch = cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_EStretch_' + suffix)
     pmaStretchBend = cmds.shadingNode("plusMinusAverage", asUtility=True, n='pmaNode_stretchBend_' + suffix)
     cmds.select(d=True)
-    disDim = cmds.distanceDimension(sp=(rootPos), ep=(endPos))
 
+    lctrR = cmds.spaceLocator(n='lctrDis_Root_' + suffix, p=rootPos)
+    lctrE = cmds.spaceLocator(n='lctrDis_End_' + suffix, p=endPos)
+    disDim = cmds.distanceDimension(sp=(rootPos), ep=(endPos))
     cmds.rename('distanceDimension1', 'disDimNode_Stretch_' + suffix)
-    cmds.rename('locator1', 'lctrDis_Root_' + suffix)
-    cmds.rename('locator2', 'lctrDis_End_' + suffix)
+    print lctrR
+    cmds.connectAttr(lctrR[0] + 'Shape.worldPosition[0]', 'disDimNode_Stretch_' + suffix + 'Shape' + '.startPoint', f=True)
+    cmds.connectAttr(lctrE[0] + 'Shape.worldPosition[0]', 'disDimNode_Stretch_' + suffix + 'Shape' + '.endPoint',f=True)
+
+
     # TODO: Need to save these for later
     # cmds.parent('lctrDis_hip', 'jnt_pelvis')
     cmds.parent('lctrDis_End_' + suffix, control[1])
@@ -385,3 +383,33 @@ def connectThroughBC(parentsA, parentsB, children, suffix):
         cmds.connectAttr(bcNodeT + '.output', children[j] + '.translate')
         cmds.connectAttr(bcNodeR + '.output', children[j] + '.rotate')
     return constraints
+
+
+def findHighestTrailingNumber(names, basename):
+    print 'In FHTN'
+    print names
+    import re
+       
+    highestValue = 0
+    
+    for n in names:
+        n=str(n)
+        print n
+        print type(n)
+        print basename
+        print n.find(basename)
+        if n.find(basename) >= 0:
+            print 'hi'
+
+            suffix = n.partition(basename)[2]
+            print suffix
+            if re.match("^[0-9]*$", suffix):
+                print suffix
+                numericalElement = int(suffix)
+                print numericalElement
+                
+                if numericalElement >= highestValue:
+                    highestValue = numericalElement +1
+                    print highestValue
+             
+    return highestValue

@@ -90,13 +90,6 @@ def setupControlObject(control, ctrlName, ctrlAttrs, ctrlPos, ctrlPath, *args):
     return ([ctrlGrp, ctrlName])
 
 
-def getSide(layoutRoot, *args):
-    root = str(layoutRoot)
-
-    parA = root.partition('_')[2]
-    parB = parA.partition('_')[0]
-    side = parB
-    return parB
 
 def collectLayoutInfo(*args):
     print "CollectLayoutInfo"
@@ -237,3 +230,5 @@ def createStretchyIk(control, ikHandleName, pvName, suffix, jnt_info, lyt_info, 
     cmds.setAttr(control[1]+'.twist_offset', offset)
     cmds.connectAttr(control[1]+'.twist_offset', pmaTwist+'.input1D[2]')
     cmds.connectAttr(pmaTwist+'.output1D', ikHandleName+'.twist')
+
+

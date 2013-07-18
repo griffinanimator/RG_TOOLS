@@ -25,9 +25,8 @@ class Create_Leg:
         sel = cmds.ls(sl=True)
   
     	lytObs = part_utils.collectLayoutInfo(sel)
+        #del lytObs[-1]
 
-        # Find the side we are on
-        #side = part_utils.getSide(self.lyt_info['layoutRoot'])
         # Create an rig joint chain
         self.jnt_info['rigJnts'] = part_utils.createJoints('rigj_', lytObs)
         # Create an ik joint chain
@@ -61,11 +60,11 @@ class Create_Leg:
         # NOTE: Dynamically generate the control objects
         footControl = part_utils.setupControlObject("FootControl.ma", ctrlName, ctrlAttrs, lytObs[2][1], os.environ['Parts_Maya_Controls'])
         # NOTE: Try deleting the stupid lyt so the disDim node builds with locators
-        f = cmds.container('Leg_container', q=True, nl=True)
-        for i in f:
-            try:
-                cmds.delete(i)
-            except: pass
+        #f = cmds.container('Leg_container', q=True, nl=True)
+    
+        #try:
+            #cmds.delete(i)
+        #except: pass
 
 
         # Create the stretchy ik chain
@@ -141,7 +140,7 @@ class Create_Leg:
             grp = cmds.group(n=grpName, empty=True)
             cmds.xform(grp, t=ikJntPos[3])
             if grp == footGrps[1] + '_' + suffix:
-                cmds.xform(grp, t=ikJntPos[2])
+                cmds.xform(grp, t=ikJntPos[5])
             if grp == footGrps[2] + '_' + suffix:
                 cmds.xform(grp, t=ikJntPos[4])
         for i in range(len(footGrps)):
