@@ -59,13 +59,12 @@ class Create_Leg:
         
         # NOTE: Dynamically generate the control objects
         footControl = part_utils.setupControlObject("FootControl.ma", ctrlName, ctrlAttrs, lytObs[2][1], os.environ['Parts_Maya_Controls'])
-        # NOTE: Try deleting the stupid lyt so the disDim node builds with locators
-        #f = cmds.container('Leg_container', q=True, nl=True)
-    
-        #try:
-            #cmds.delete(i)
-        #except: pass
-
+        # Do som additional adjustment to the foot control
+        posY = cmds.xform(lytObs[5][0], q=True, ws=True, t=True)
+        posXZ = cmds.xform(lytObs[2][0], q=True, ws=True, t=True)
+        cmds.xform(footControl[0], t=[posXZ[0], posY[1], posXZ[2]], ws=True)
+        cmds.xform(footControl[0], piv=posXZ, ws=True)
+        cmds.xform(footControl[1], piv=posXZ, ws=True)
 
         # Create the stretchy ik chain
         ikInfo = part_utils.createStretchyIk(self.jnt_info['ikJnts'], self.jnt_info['rigJnts'], footControl, ikHandleName, pvName, suffix)
@@ -193,9 +192,6 @@ class Create_Leg:
         cmds.parent(pivLoc[0], footControl)
         cmds.xform(pivLoc[0], t=ikJntPos[4])
         fgTran = cmds.getAttr(footGrps[4]+ '_' + suffix + '.translate')
-        #pmaFTwist = cmds.shadingNode("plusMinusAverage", asUtility=True, n='pmaNode_FootTwist_' + suffix))
-        #cmds.setAttr(pmaFTwist+'.input1')
-        #cmds.connectAttr(pivLoc[0]+'.translate', footGrps[0]+ '_' + suffix + '.rotatePivot')
         cmds.connectAttr(footControl+'.pivot_posX', pivLoc[0]+'.tx')
         cmds.connectAttr(footControl+'.pivot_posZ', pivLoc[0]+'.tz')
         
@@ -207,6 +203,12 @@ class Create_Leg:
         for i in range(len(self.jnt_info['bcNodes'])):
             for node in self.jnt_info['bcNodes'][i]:
                 cmds.connectAttr(footControl +'.ik_fk', node + '.blender' )
+
+        # Hookup control vis for the switch
+        # NOTE:  This import is temp
+        
+
+
 
 
 

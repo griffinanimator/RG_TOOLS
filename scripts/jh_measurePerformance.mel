@@ -1,0 +1,191 @@
+//*************************************************************************************************************
+// Title:		jh_measurePerformance.mel
+// Author:		Jorn-Harald Paulsen
+// Created:		December 7, 2011
+// Last Update:		June 06, 2013
+// Description:         Utility to measure the speed of a scene, especially useful for rig-performance tweaks.
+//*************************************************************************************************************
+// MAIN WINDOW
+//*************************************************************************************************************
+global proc jh_measurePerformance ()
+{
+  //Delete window if it already exists
+  if (`window -q -ex jh_measurePerformance`) deleteUI jh_measurePerformance;
+
+  //Main Window
+  window -te 30 -t "Measure Performance" -mxb 0 -s 1 -rtf 0 -mb 0 -mbv 0 -w 350 -h 544 jh_measurePerformance;
+  
+  //Window content
+  columnLayout -adjustableColumn true;
+  text -label "\nUtility to measure performance/evaluation of the scene" -fn boldLabelFont;
+  separator -w 300 -h 10;
+  text -label "It measures by playing off the scene, so you should";
+  text -label "have animation on the obects you want to evaluate!";
+  text -label "Note: Longer playback = More accurate results";
+  separator -w 300 -h 15;
+  text -label "Startframe:";
+  intField startFrame;
+  text -label "Endframe:";
+  intField endFrame;
+  separator -w 300 -h 15;
+  text -label "Number of nodes to return:";
+  intField -v 20 numNodes;
+  separator -w 300 -h 10;
+  button -label "Measure performance" -c jh_evaluate;
+  textField -text "Time taken: " -ed 0 timeField;
+  textField -text "FPS: " -ed 0 fpsField;
+  textScrollList -ams 0 -h 250 -sc jh_selNode evaluatedNodes;
+  separator -w 300 -h 15;
+  text -label "Filter by nodetype" -fn boldLabelFont;
+  textField -text "" nodeField;
+  button -label "Filter" -c jh_filterResult;
+  separator -w 300 -h 15;
+  button -label "Choose where to save the file" -c jh_getExportDir;
+  textField -en 0 evalExportField;
+  button -label "Export the results" -c jh_exportToFile;
+  separator -w 300 -h 15;
+  //Set the startFrame/endFrame min/max to the timeline's min/max
+  intField -e -v `playbackOptions -q -min` startFrame;
+  intField -e -v `playbackOptions -q -max` endFrame;
+  //Create the window
+  window -e -w 350 -h 544 jh_measurePerformance;
+  showWindow jh_measurePerformance;
+}
+
+global proc jh_evaluate()
+{
+  //Remove all items in the textScrollList
+  textScrollList -e -ra evaluatedNodes;
+  //Get the frames to playback
+  int $min = `intField -q -v startFrame`;
+  int $max = `intField -q -v endFrame`;
+  //Set the timeSlider to the min/max values
+  playbackOptions -min $min -max $max;
+  //Get the number of frames to playback
+  int $frames = $max - $min;
+  //Get the number of nodes to return
+  int $nodesCount = `intField -q -v numNodes`;
+
+  //Set the playBack to Free/Play Every Frame
+  playbackOptions -e -playbackSpeed 0 -maxPlaybackSpeed 0;
+  //Set the timeSlider to the startFrame
+  currentTime `playbackOptions -q -min`;
+  //Reset the dgtimer
+  dgtimer -on -reset;
+  //Play the scene (don't loop)
+  play -wait;
+  //Turn off the dgtimer
+  dgtimer -off;
+  //Stor the result of the dgTimer
+  string $evalResult[] = `dgtimer -outputFile "MEL" -maxDisplay $nodesCount -query`;
+  //Extract the elapsed time and the FPS
+  string $tempToken[];
+  tokenize $evalResult[12] ": " $tempToken;
+  float $time = $tempToken[3];
+  float $fps = ($frames / $time);
+  //Update the textField for time and FPS
+  textField -e -text ("Time taken: " + $tempToken[3] + " seconds") timeField;
+  textField -e -text ("FPS: " + $fps) fpsField;
+  //For each returned node
+  for($a = 40; $a < (40 + $nodesCount); $a++)
+  {
+    //Remove all of the spaces between each element
+    string $el[];
+    tokenize $evalResult[$a] " " $el;
+    //If the result has a % at index 3
+    if (`gmatch $el[3] "*%"` == 1)
+    {
+      //Create a separator string
+      string $sep = "    |    ";
+      //Generate the string to put into the textScrollList
+      string $string = ($el[0] + $sep + $el[3] + $sep + $el[7] + $sep + $el[8]);
+      //Update the textScrollList
+      textScrollList -e -append $string evaluatedNodes;
+    }
+  }
+  //Get the actual number of elements returned
+  int $returnedElements = size(`textScrollList -q -ai evaluatedNodes`);
+  //Update the node count to the actual number
+  intField -e -v $returnedElements numNodes;
+  //Print the result
+  print $evalResult;
+  print "\n\n\nSee the script editor for details!\n";
+}
+
+global proc jh_selNode()
+{
+  //Get the selected item in the textScrollList
+  string $selItem[] = `textScrollList -q -si evaluatedNodes`;
+  //Extract the elapsed time and the FPS
+  string $tempToken[];
+  tokenize $selItem[0] "|" $tempToken;
+  //If the object exists
+  if(objExists($tempToken[3]) == 1)
+  {
+    //Select the item
+    select -r $tempToken[3];
+    //Print information
+    print ("\nSelected: " + $tempToken[3] + "\n");
+  }  
+}
+
+global proc jh_filterResult()
+{
+  //Get the text to filter from
+  string $filter = `textField -q -text nodeField`;
+  //Get all of the items in the textScrollList
+  string $allItems[] = `textScrollList -q -ai evaluatedNodes`;
+  //Remove all items in the textScrollList
+  textScrollList -e -ra evaluatedNodes;
+  //For each item in the textScrollList
+  for($item in $allItems)
+  {
+    //Separate the string
+    string $tempToken[];
+    tokenize $item " | " $tempToken;
+    //If the current element matches the filter-tekst, add it to the textScrollList
+    if (`gmatch $tempToken[2] $filter` == 1) textScrollList -e -append $item evaluatedNodes;
+  }
+  //Get the actual number of elements returned
+  int $returnedElements = size(`textScrollList -q -ai evaluatedNodes`);
+  //If no elements was returned
+  if($returnedElements == 0)
+  {
+    //Add the original elements back into the textScrollList
+    for($element in $allItems) textScrollList -e -append $element evaluatedNodes;
+    //Print warning message
+    warning "\nCould not find any matching items!\n";
+  }
+  //Else, print information
+  else print ("A total of " +  $returnedElements + " nodes was found matching \"" + $filter + "\"\n");
+}
+
+global proc jh_getExportDir()
+{
+  //Open the file-dialog, and get the results from it
+  string $getExportDir = `fileDialog -m 1 -dm "*.mel"`;
+  //Put the directory in the textField
+  textField -e -text $getExportDir evalExportField;
+}
+
+global proc jh_exportToFile()
+{
+  //Get all of the items in the textScrollList
+  string $allItems[] = `textScrollList -q -ai evaluatedNodes`;
+  //Get the directory for where to store the animation
+  string $exportDir = `textField -q -text evalExportField`;
+  //If a directory wasn't defined, print error
+  if($exportDir == "") error "\nYou need to define a directory to store the animation in!\n";
+ 
+  //Create and open the storefile for writing
+  int $fileId = `fopen $exportDir "w"`;
+  //For each item in the textScrollList, print the item to the file
+  for($item in $allItems) fprint $fileId ($item + "\n");
+  //Close the file for writing
+  fclose $fileId;
+  //Print information
+  print "\nDone!";
+}
+
+
+jh_measurePerformance;

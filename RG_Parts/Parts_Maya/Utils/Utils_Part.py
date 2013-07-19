@@ -132,6 +132,7 @@ def rigNodeRoot(numParts, userDefinedName, pos, num, *args):
     tform = cmds.createNode('transform', name=name.replace('_Shape', ''))
     # Create an RG_Part node and parent to the transform
     rNode = cmds.createNode ('RG_PartRoot', n=name, p=tform)
+    pos = [pos[0], pos[1]+1, pos[2]]
     cmds.xform(tform, t=pos, ws=True)
     cmds.select(d=True)
 
