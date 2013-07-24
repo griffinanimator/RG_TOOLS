@@ -1,12 +1,12 @@
 import json
 import tempfile
 
-fileName = 'C:/Users/rgriffin/Documents/GitHub/RG_ARTTOOLS/RG_TOOLS/RG_Parts/Parts_Maya/Data/tmp.json'
+def writeJson(fileName, data):
 
-data = [ { 'a':'A', 'b':(2, 4), 'c':3.0 } ]
+	with open(fileName, 'w') as outfile:
+		json.dump(data, outfile)
 
-with open(fileName, 'w') as outfile:
-	json.dump(data, outfile)
+	file.close(fileName)
 
-
-print (open(outfile.name, 'r').read())
+def readJson(fileName):
+	print (open(fileName.name, 'r').read())

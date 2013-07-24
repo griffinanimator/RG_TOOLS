@@ -18,6 +18,8 @@ class PartParam_UI:
         path = 'Z:/RG_Parts/Parts_Maya/Widgets/Layout/Layout_Defs.csv'
         csvInfo = csvUtils.csvRead(path)
 
+
+        
         """ A bunch of crap to convert csv info to a usable state """
         tmpInfo = []
 
@@ -115,7 +117,7 @@ class PartParam_UI:
         parts = Utils_Part.rigNode(userDefinedName, numParts, partRoot, pos, num)
 
         partsLen = len(parts)
-        print partsLen
+
         for p in range(len(parts)):  
             contained_nodes.append(parts[p])       
             if p < partsLen-1:
