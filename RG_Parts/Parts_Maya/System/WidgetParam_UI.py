@@ -111,7 +111,8 @@ class PartParam_UI:
         pos = self.csv_info['partInfo'][selectedIndex][1][0]
 
         partRoot = Utils_Part.rigNodeRoot(numParts, userDefinedName, pos, num)
-        contained_nodes.append(partRoot)
+        contained_nodes.append(partRoot[0])
+        contained_nodes.append(partRoot[1])
 
         pos = self.csv_info['partInfo'][selectedIndex][1]
         parts = Utils_Part.rigNode(userDefinedName, numParts, partRoot, pos, num)
@@ -119,11 +120,13 @@ class PartParam_UI:
         partsLen = len(parts)
 
         for p in range(len(parts)):  
-            contained_nodes.append(parts[p])       
+            contained_nodes.append(parts[p])  
+                
             if p < partsLen-1:
                 partList = (parts[p], parts[p+1]) 
      
                 partJoint = Utils_Part.createPJoints(partList)
+
                 for j in partJoint:
                     contained_nodes.append(j)
                     # Set drawing overide on joints
@@ -137,14 +140,12 @@ class PartParam_UI:
 
                 # Connect ikHnadles, parts, and joints
                 ptca =cmds.pointConstraint(partList[0], partJoint[0], mo=True)
-                #cmds.connectAttr(partJoint[0] + '.rotate', partList[0] +'.rotateAxis')
-                
-                #cmds.parent(partJoint[0], partList[0])
-                print partList
+
                 ptcb = cmds.pointConstraint(partList[1], ikInfo[0][0])
 
                 contained_nodes.append(ptca[0])
                 contained_nodes.append(ptcb[0])
+                
             if p != 0:
                 cmds.aimConstraint(parts[p], parts[p-1])
 

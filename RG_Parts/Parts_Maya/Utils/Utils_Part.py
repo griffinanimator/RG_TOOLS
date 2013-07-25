@@ -39,6 +39,8 @@ def createJoints(prefix, lytObs, *args):
 
     return ik_joints  
 
+
+#NOTE:  I am trying a new method
 def scStretchyIk(partList, partJoints, ikHandleName, *args):
     # Empty list to store nodes generated in scStretchyIk
     ikNodes = []
@@ -56,28 +58,40 @@ def scStretchyIk(partList, partJoints, ikHandleName, *args):
     suffix = partJoints[0].partition('_')[2]
     # Stretch ----------------------------------------------------------
  
-    #mdEStretch = cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_EStretch_' + suffix)
+    mdEStretch = cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_EStretch_' + suffix)
     cmds.select(d=True)
     # NOTE: I need to change disDim transform name
-    #disDim = cmds.distanceDimension(sp=(sjPos), ep=(ejPos))
-    #cmds.setAttr('distanceDimension1.visibility', 0)
-    #cmds.connectAttr(disDim + '.distance', mdEStretch + '.input1X')
-    #cmds.rename('distanceDimension1', 'disDimNode_Stretch_Shape' + suffix)
 
-    
-    #mds.rename('distanceDimension1', 'disDimNode_Stretch_' + suffix)
-    
+    lctrR = cmds.spaceLocator(n='lctrDis_Root_' + suffix, p=sjPos)
+    lctrE = cmds.spaceLocator(n='lctrDis_End_' + suffix, p=ejPos)
+    disDim = cmds.distanceDimension(sp=(sjPos), ep=(ejPos))
+
+    cmds.connectAttr(lctrR[0] + 'Shape.worldPosition[0]', disDim  + '.startPoint', f=True)
+    cmds.connectAttr(lctrE[0] + 'Shape.worldPosition[0]', disDim  + '.endPoint',f=True)
+    cmds.setAttr('distanceDimension1.visibility', 0)
+    cmds.connectAttr(disDim + '.distance', mdEStretch + '.input1X')
+    cmds.rename('distanceDimension1', 'disDimNode_Stretch_' + suffix)
+
     # Determine the length of the joint chain in default position
-    #endLen = cmds.getAttr(partJoints[1] + '.ty')
+    endLen = cmds.getAttr(partJoints[1] + '.ty')
 
-    #cmds.setAttr(mdEStretch + '.input2X', endLen)
+    cmds.setAttr(mdEStretch + '.input2X', endLen)
 
     #Finally, we output our new values into the translateX of the knee and ankle joints.
-    #cmds.connectAttr( mdEStretch + '.outputX', ejnt  + '.ty')
+    cmds.connectAttr( mdEStretch + '.outputX', ejnt  + '.ty')
 
-    #ikNodes.append([ikH[0], mdEStretch, 'disDimNode_Stretch_' + suffix])
-    ikNodes.append([ikH[0]])
+    # Parent the locators to the RG_Part
+    cmds.parentConstraint(partList[0], lctrR, mo=True)
+    cmds.parentConstraint(partList[1], lctrE, mo=True)
+
+    # Set locator visibility to off
+    cmds.setAttr(lctrE[0] + '.visibility', 0)
+    cmds.setAttr(lctrR[0] + '.visibility', 0)
+
+    ikNodes.append([ikH[0], mdEStretch, 'disDimNode_Stretch_' + suffix, lctrR, lctrE])
+
     return ikNodes
+
 
 def createPJoints(parts, *args):
 
@@ -86,8 +100,14 @@ def createPJoints(parts, *args):
     
     jointNameR = 'pjnt_'+parts[0]
     jointNameE = 'pjnt_end_'+parts[0]
+    # Create the joints
     pjntR = cmds.joint(n=jointNameR, p=(cmds.xform(parts[0], q=True, ws=True, t=True)))
+    cmds.select(d=True)
     pjntE = cmds.joint(n=jointNameE, p=(cmds.xform(parts[1], q=True, ws=True, t=True)))
+    cmds.parent(pjntE, pjntR)
+    # Orient the joints
+    cmds.joint(pjntR, e=True, zso=True, oj='xyz')
+    cmds.joint(pjntE, e=True, zso=True, oj='xyz')
 
     jointList.append(pjntR)
     jointList.append(pjntE)
@@ -112,7 +132,7 @@ def rigNode(userDefinedName, numParts, pParent, pos, num, *args):
         cmds.select(d=True)
         cmds.xform(tform, t=p)
 
-        cmds.parent(rNode, pParent)          
+        cmds.parent(rNode, pParent[0])          
 
         lockAttrs=('.rx', '.ry', '.rz', '.sx', '.sy', '.sz')
         #for attr in lockAttrs:
@@ -136,9 +156,12 @@ def rigNodeRoot(numParts, userDefinedName, pos, num, *args):
     cmds.xform(tform, t=pos, ws=True)
     cmds.select(d=True)
 
-    return(tform)
+    # Create a group for rigNodes
+    grp = cmds.group(n=userDefinedName + '_PartRoot_Grp_' + num, em=True)
+    cmds.xform(grp, ws=True, t=pos)
+    cmds.parent(rNode, grp)
 
-
+    return([tform, grp])
 
 
 def matchTwistAngle(twistAttribute, ikJoints, targetJoints):
@@ -266,7 +289,7 @@ def createStretchyIk(ikjnt_info, rjnt_info, control, ikHandleName, pvName, suffi
     endPos = cmds.xform(ikjnt_info[2], q=True, t=True, ws=True)
     
     # Create the ik solver
-    cmds.ikHandle(n= ikHandleName, sj=ikjnt_info[0], ee=ikjnt_info[2], sol = "ikRPsolver")
+    ikh = cmds.ikHandle(n= ikHandleName, sj=ikjnt_info[0], ee=ikjnt_info[2], sol = "ikRPsolver")
     
     # Stretch ----------------------------------------------------------
     #Start by creating all of the nodes we will need for the stretch.
@@ -282,7 +305,7 @@ def createStretchyIk(ikjnt_info, rjnt_info, control, ikHandleName, pvName, suffi
     lctrE = cmds.spaceLocator(n='lctrDis_End_' + suffix, p=endPos)
     disDim = cmds.distanceDimension(sp=(rootPos), ep=(endPos))
     cmds.rename('distanceDimension1', 'disDimNode_Stretch_' + suffix)
-    print lctrR
+
     cmds.connectAttr(lctrR[0] + 'Shape.worldPosition[0]', 'disDimNode_Stretch_' + suffix + 'Shape' + '.startPoint', f=True)
     cmds.connectAttr(lctrE[0] + 'Shape.worldPosition[0]', 'disDimNode_Stretch_' + suffix + 'Shape' + '.endPoint',f=True)
 
@@ -357,6 +380,8 @@ def createStretchyIk(ikjnt_info, rjnt_info, control, ikHandleName, pvName, suffi
     cmds.setAttr(control[1]+'.twist_offset', offset)
     cmds.connectAttr(control[1]+'.twist_offset', pmaTwist+'.input1D[2]')
     cmds.connectAttr(pmaTwist+'.output1D', ikHandleName+'.twist')
+
+    return(ikh)
 
 def connectJointChains(parents, children):
     constraints = []

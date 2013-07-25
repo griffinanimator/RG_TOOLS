@@ -21,22 +21,25 @@ class Create_Arm:
 
     def install(self, *args):
         # Collect layout info
+        print "Install"
         sel = cmds.ls(sl=True)
   
         lytObs = part_utils.collectLayoutInfo(sel)
+        #del lytObs[-1]
 
-        # Find the side we are on
-        #side = part_utils.getSide(self.lyt_info['layoutRoot'])
         # Create an rig joint chain
         self.jnt_info['rigJnts'] = part_utils.createJoints('rigj_', lytObs)
         # Create an ik joint chain
         self.jnt_info['ikJnts'] = part_utils.createJoints('ikj_', lytObs)
-        
+        # Create an fk joint chain
+        self.jnt_info['fkJnts'] = part_utils.createJoints('fkj_', lytObs)
+      
         # Define names for components involved in ik setup
         userDefinedName = sel[0].partition('PartRoot_')[0]
 
         #ikHandleName = "ikHandle_%s_leg" % (side)
         ikHandleName = userDefinedName + 'ikh'
+        
         #ctrlName = "ctrl_%s_leg" % (side)
         ctrlName = userDefinedName + 'ctrl'
         
@@ -45,30 +48,53 @@ class Create_Arm:
         #suffix = "%s_leg" % (side)
         suffix = userDefinedName 
 
+        # Connect the ik and fk joints to the rig joints
+        constraints = part_utils.connectThroughBC(self.jnt_info['fkJnts'], self.jnt_info['ikJnts'], self.jnt_info['rigJnts'], suffix)
+        self.jnt_info['bcNodes'] = constraints
+
         # Define foot attribute names
-        ctrlAttrs = ('twist', 'stretch', 'foot_roll', 'roll_break', 'foot_twist', 'foot_bank', 'pivot_posX', 'pivot_posZ', 'toe_flap', 'twist_offset')
+        ctrlAttrs = ('twist', 'stretch', 'stretch_bend', 'twist_offset', 'ik_fk')
         
         # NOTE: Dynamically generate the control objects
         armControl = part_utils.setupControlObject("ArmControl.ma", ctrlName, ctrlAttrs, lytObs[2][1], os.environ['Parts_Maya_Controls'])
-        # NOTE: Try deleting the stupid lyt so the disDim node builds with locators
-        f = cmds.container('Test_container', q=True, nl=True)
-        for i in f:
-            try:
-                cmds.delete(i)
-            except: pass
 
 
         # Create the stretchy ik chain
-        ikInfo = part_utils.createStretchyIk(self.jnt_info['ikJnts'], armControl, ikHandleName, pvName, suffix)
+        ikInfo = part_utils.createStretchyIk(self.jnt_info['ikJnts'], self.jnt_info['rigJnts'], armControl, ikHandleName, pvName, suffix)
         
-        # Setup the ik foot
+        # Parent the ik to the control
+
+        cmds.parent(ikInfo[0], armControl[1])
         ikJntPos = []
         for jnt in self.jnt_info['ikJnts']:
             pos = cmds.xform(jnt, q=True, t=True, ws=True)
             ikJntPos.append(pos)
-        #self.foot_info['footInfo'] = self.setupRGFoot(suffix, footControl[1], ikJntPos, ikHandleName)
-        
 
 
-    def setupFoot(self, suffix, footControl, ikJntPos, ikHandleName, *args):
-        print 'In Setup Arm'
+        # Setup the FK controls
+        ctrlAttrs = ('stretch', 'size')
+        fkControls = []
+        for i in range(len(self.jnt_info['fkJnts'])):
+            ctrlName = self.jnt_info['fkJnts'][i].replace('fkj_', 'ctrl_')
+            ctrlPos = cmds.xform(self.jnt_info['fkJnts'][i], q=True, ws=True, t=True)
+            ctrlRot = cmds.xform(self.jnt_info['fkJnts'][i], q=True, ws=True, ro=True)
+
+            fkControl = part_utils.setupControlObject("SphereControl.ma", ctrlName, ctrlAttrs, ctrlPos, os.environ['Parts_Maya_Controls'])
+            fkControls.append(fkControl)
+
+            cmds.xform(fkControl[0], ws=True, t=ctrlPos)
+            cmds.xform(fkControl[0], ws=True, ro=ctrlRot)
+            cmds.parentConstraint(fkControl[1], self.jnt_info['fkJnts'][i], mo=True)
+
+        for i in range(len(fkControls)):
+            if i !=0:
+                cmds.parent(fkControls[i][0], fkControls[i-1][1])
+                cmds.setAttr(fkControls[i][1]+'.size', 1)
+                cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleX')
+                cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleY')
+                cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleZ')
+
+        # Hookup ik fk switch
+        for i in range(len(self.jnt_info['bcNodes'])):
+            for node in self.jnt_info['bcNodes'][i]:
+                cmds.connectAttr(armControl[1] +'.ik_fk', node + '.blender' )

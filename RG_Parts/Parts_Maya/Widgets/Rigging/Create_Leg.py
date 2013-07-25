@@ -75,7 +75,7 @@ class Create_Leg:
         for jnt in self.jnt_info['ikJnts']:
             pos = cmds.xform(jnt, q=True, t=True, ws=True)
             ikJntPos.append(pos)
-        self.foot_info['footInfo'] = self.setupRGFoot(suffix, footControl[1], ikJntPos, ikHandleName)
+        self.foot_info['footInfo'] = self.setupRGFoot(suffix, footControl[1], ikJntPos, ikHandleName, ['.ry', '.rx', '.rz'])
 
 
         # Setup the FK controls
@@ -103,8 +103,10 @@ class Create_Leg:
 
 
     
-    def setupRGFoot(self, suffix, footControl, ikJntPos, ikHandleName, *args):
+    def setupRGFoot(self, suffix, footControl, ikJntPos, ikHandleName, orient, *args):
         print 'In Setup Foot'
+        # NOTE: I want to pass in an orient argument that will determine rotation connections for foot groups.
+        
         # NOTE:  Add all created nodes to a list.
         newFootGrps = []
         # Create utility nodes
@@ -166,12 +168,12 @@ class Create_Leg:
         cmds.connectAttr(rollBreak, conTRoll + '.colorIfFalseR')
         cmds.connectAttr(rollBreak, pmaTRoll + '.input1D[1]')
         cmds.connectAttr(conTRoll + '.outColorR', pmaTRoll + '.input1D[0]')
-        cmds.connectAttr(pmaTRoll + '.output1D', 'grp_toe_' + suffix + '.rx')
+        cmds.connectAttr(pmaTRoll + '.output1D', 'grp_toe_' + suffix + orient[0])
 
         # Setup the Heel -----------------------------------------------------
         cmds.connectAttr(footRoll, conHRoll + '.firstTerm')
         cmds.connectAttr(footRoll, conHRoll + '.colorIfTrueR')
-        cmds.connectAttr(conHRoll + '.outColorR', 'grp_heel_' + suffix + '.rx')
+        cmds.connectAttr(conHRoll + '.outColorR', 'grp_heel_' + suffix + orient[0])
 
         # Setup Ball ----------------------------------------------------------
         cmds.connectAttr(footRoll, conBRoll+'.firstTerm')
@@ -180,12 +182,12 @@ class Create_Leg:
         cmds.connectAttr(rollBreak, conNBRoll+'.colorIfTrueR')
         cmds.connectAttr(conNBRoll+'.outColorR', pmaBRoll+'.input1D[0]')
         cmds.connectAttr('grp_toe_' + suffix + '.rx', pmaBRoll+'.input1D[1]')
-        cmds.connectAttr(pmaBRoll+'.output1D', 'grp_ball_' + suffix + '.rx')
+        cmds.connectAttr(pmaBRoll+'.output1D', 'grp_ball_' + suffix + orient[0])
         cmds.connectAttr(conBRoll+'.outColorR', conNBRoll+'.firstTerm')
         cmds.connectAttr(conBRoll+'.outColorR', conNBRoll+'.colorIfFalseR')
 
         # Toe Flap
-        cmds.connectAttr(footControl +'.toe_flap', footGrps[4]+ '_' + suffix + '.rx')
+        cmds.connectAttr(footControl +'.toe_flap', footGrps[4]+ '_' + suffix + orient[0])
 
         # Animated Pivot
         pivLoc = cmds.spaceLocator(n='lctrTwist_'+suffix)
@@ -196,8 +198,8 @@ class Create_Leg:
         cmds.connectAttr(footControl+'.pivot_posZ', pivLoc[0]+'.tz')
         
 
-        cmds.connectAttr(footControl+'.foot_twist', footGrps[0]+ '_' + suffix + '.ry')
-        cmds.connectAttr(footControl+'.foot_bank', footGrps[0]+ '_' + suffix + '.rz')
+        cmds.connectAttr(footControl+'.foot_twist', footGrps[0]+ '_' + suffix + orient[1])
+        cmds.connectAttr(footControl+'.foot_bank', footGrps[0]+ '_' + suffix + orient[2])
 
         # Hookup ik fk switch
         for i in range(len(self.jnt_info['bcNodes'])):

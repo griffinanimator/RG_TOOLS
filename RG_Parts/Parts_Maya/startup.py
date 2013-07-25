@@ -73,3 +73,8 @@ print "Done Loading User Scripts"
 # Load Setting
 print "Trying to load settings"
 startup = pm.evalDeferred('import RG_Parts.Parts_Maya.settings')
+
+# Setup Maya prefs to match Max
+cmds.upAxis( ax='z', rv=True )
+cmds.currentUnit( linear='ft' )
+cmds.currentUnit( time='ntsc' )
