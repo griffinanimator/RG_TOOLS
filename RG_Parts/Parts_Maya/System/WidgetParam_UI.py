@@ -138,7 +138,7 @@ class PartParam_UI:
                 for i in ikInfo[0]:
                     contained_nodes.append(i)
 
-                # Connect ikHnadles, parts, and joints
+                # Connect ikHandles, parts, and joints
                 ptca =cmds.pointConstraint(partList[0], partJoint[0], mo=True)
 
                 ptcb = cmds.pointConstraint(partList[1], ikInfo[0][0])

@@ -293,6 +293,7 @@ def createStretchyIk(ikjnt_info, rjnt_info, control, ikHandleName, pvName, suffi
     
     # Stretch ----------------------------------------------------------
     #Start by creating all of the nodes we will need for the stretch.
+    
     adlStretch = cmds.shadingNode("addDoubleLinear", asUtility=True, n='adlNode_RStretch_' + suffix)
     clmpStretch = cmds.shadingNode("clamp", asUtility=True, n='clampNode_Stretch_' + suffix)
     mdLStretch = cmds.shadingNode("multiplyDivide", asUtility=True, n='mdNode_RStretch_' + suffix)
@@ -331,7 +332,17 @@ def createStretchyIk(ikjnt_info, rjnt_info, control, ikHandleName, pvName, suffi
     cmds.setAttr (mdLStretch + '.operation',  2)
 
     # Connect the distance dimension so we always know the current length of the leg.
-    cmds.connectAttr('disDimNode_Stretch_' + suffix +'.distance', clmpStretch + '.inputR')
+    # If we are working in feet I need a unit conversion node.
+    units = cmds.currentUnit( query=True, linear=True )
+    print units
+    if units == 'ft':
+        ucStretch = cmds.shadingNode("unitConversion", asUtility=True, n='ucNode_RStretch_' + suffix)
+        cmds.setAttr (ucStretch + '.conversionFactor', 0.0328)
+        cmds.connectAttr('disDimNode_Stretch_' + suffix +'.distance', ucStretch + '.input')
+        cmds.connectAttr(ucStretch + '.output', clmpStretch + '.inputR')
+    else:
+        cmds.connectAttr('disDimNode_Stretch_' + suffix +'.distance', clmpStretch + '.inputR')
+
 
     # Connect the Stretch_Bend to pma_stretchBend
     cmds.setAttr(pmaStretchBend + '.input1D[0]', chainLen)
