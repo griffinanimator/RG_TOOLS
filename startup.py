@@ -60,6 +60,12 @@ for script in pyFiles:
 melFiles = findAllFiles(Script_Path, '.mel')
 for script in melFiles:
 	allScriptFiles.append(script)
+    try: 
+        mel.eval(source script;)
+    except: pass
+
+
+
 
 
 createMenu(allScriptFiles)
