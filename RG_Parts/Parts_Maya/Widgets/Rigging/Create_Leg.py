@@ -25,6 +25,7 @@ class Create_Leg:
         sel = cmds.ls(sl=True)
   
     	lytObs = part_utils.collectLayoutInfo(sel)
+        print lytObs
         #del lytObs[-1]
 
         # Create an rig joint chain
