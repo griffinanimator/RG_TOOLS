@@ -33,7 +33,7 @@ def calculateTwistVector(startJoint, secondJoint, endJoint):
     twistVector = [p[0] - q[0], p[1] - q[1], p[2] - q[2]]
     
     return twistVector  
-    
+
 def normaliseVector(vector):
     from math import sqrt
     returnVector = list(vector)
