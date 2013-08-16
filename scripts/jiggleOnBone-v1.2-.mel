@@ -1,0 +1,179 @@
+/*  This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: jiggleOnBone.mel v1.2
+''    Author: Chad Robert Morgan
+''    Last Updated: September 4, 2003
+''    Update/Change this file at:
+''    http://www.highend3d.com/maya/mel/?section=animation#2513
+''  
+''  History:
+''     v on August 26, 2003 by Chad Robert Morgan
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+
+
+global string $jiggleOnBone_window;
+
+//creates a pointOnSurfaceInfo node and plugs it's position into the translate of the object
+//be carefull because the pointOnSurfaceInfor outputs the world space co-ordinates and translate is local
+proc string pointOnSurfaceConstraint(string $nurbsSurface, string $object, float $u, float $v)
+{
+      string $infoNode = `pointOnSurface -ch on -u $u -v $v $nurbsSurface`;
+      connectAttr($infoNode + ".position") ($object + ".translate");
+      return ($infoNode);
+}
+
+
+
+
+
+//Handy script on its own. It's equal to using a point, scale, and orient constrant and then
+//deleting the constraints.
+proc snapAlignObjects(string $source, string $target)
+{
+
+	float $translate[3];
+	float $rotate[3];
+	float $scale[3];
+	//get world space transformations for selected node
+	$translate = `xform -q -ws -t $source`;
+	$rotate = `xform -q -ws -ro $source`;
+	$scale = `xform -q -r -s $source`;
+
+	//give the transformations to the zero node
+	xform -a -t $translate[0] $translate[1] $translate[2] $target;
+	xform -ro $rotate[0] $rotate[1] $rotate[2] $target;
+	xform -s $scale[0] $scale[1] $scale[2] $target;
+	
+
+}
+
+
+
+
+
+//creates the jiggle deformers and sets the attributes. When you create a jiggle deformer
+//from the menu it calls a MEL script doJiggle, but I never trust calling another MEL script.
+//More often than not, the other script won't exist on someone else's machine.
+//Note: Takes an array of strings
+proc createDeformers(string $nurbsPlanes[], float $stiffness, float $dampening, float $weight)
+{
+	string $jiggles[] = `deformer -type "jiggle" $nurbsPlanes`;
+
+	string $cur;
+	for($cur in $jiggles)
+	{
+		setAttr ($cur + ".stiffness") $stiffness;
+		setAttr ($cur + ".damping") $dampening;
+		setAttr ($cur + ".jiggleWeight") $weight;
+	}
+}
+
+
+
+
+
+//quick and dirty UI. Creates float slider groups and a button to launch.
+global proc crm_jiggleOnBoneUI()
+{
+	global string $jiggleOnBone_window;
+
+	if(!`window -ex $jiggleOnBone_window`)
+	{
+	$jiggleOnBone_window = `window -title "Jiggle Deformer for Joints"
+    	-iconName "Jiggle"
+    	-widthHeight 300 100`;
+
+	columnLayout;
+
+	string $stiffnessField = `floatSliderGrp -label "Stiffness" -field true
+    	-minValue 0.0 -maxValue 10.0
+    	-fieldMinValue 0 -fieldMaxValue 100.0
+    	-value 0.5`;
+	setParent..;
+	
+	string $dampeningField = `floatSliderGrp -label "Dampening" -field true
+    	-minValue 0.0 -maxValue 10.0
+    	-fieldMinValue 0 -fieldMaxValue 100.0
+    	-value 0.5`;
+	setParent..;
+
+	string $weightField = `floatSliderGrp -label "Weight" -field true
+    	-minValue 0.0 -maxValue 10.0
+    	-fieldMinValue 0 -fieldMaxValue 100.0
+    	-value 1.0`;
+	setParent..;
+	
+	
+	string $cmd = ("crm_jiggleOnBone( " + 
+			`floatSliderGrp -q -v $stiffnessField` + ", " +
+			`floatSliderGrp -q -v $dampeningField` + ", " +
+			`floatSliderGrp -q -v $weightField` + ")" );
+	
+	string $doIt = `button -label "create" -h 50 -w 250 -align "center" -command $cmd`;
+	setParent ..;
+
+	showWindow $jiggleOnBone_window;
+	}
+
+}
+
+
+
+
+
+//Creates a plane and places it at the joint, creates a locator, constrains the locator to the plane.
+//constrains joint to locator, places jiggle deformer on planes
+global proc crm_jiggleOnBone(float $stiffness, float $dampening, float $weight)
+{
+	string $sel[] = `ls -sl -type "joint"`;
+
+	string $cur;
+	string $jigglePlanes[];
+	int $i = 0;
+
+	for($cur in $sel)
+	{
+		//create empty node
+		string $nurbsPlaneArray[] = `nurbsPlane -n "jigglePlane#" -p 0 0 0 -ax 0 0 1 -w 1 -lr 1 -d 1 -u 2 -v 2 -ch 1`;
+		string $nurbsPlane = $nurbsPlaneArray[0];
+
+		snapAlignObjects($cur, $nurbsPlane);
+
+		string $locatorArray[] = `spaceLocator -p 0 0 0 -n "jiggleLocator#"`;
+		string $locator = $locatorArray[0];
+		setAttr ($locator + ".inheritsTransform") 0;
+
+
+		
+		pointOnSurfaceConstraint($nurbsPlane, $locator, 0.5, 0.5);
+		pointConstraint $locator $cur ;
+
+		string $parent[] = `listRelatives -p $cur`;
+		string $groupNode = `group -name ($cur + "GiggleParent") -empty`;
+		if(size($parent) > 0)
+		{
+			pointConstraint $parent[0] $groupNode;
+			orientConstraint $parent[0] $groupNode;
+			scaleConstraint $parent[0] $groupNode;
+
+		}
+	
+		parent $locator $nurbsPlane $groupNode;
+
+
+		$jigglePlanes[$i] = $nurbsPlane;
+		$i++;
+
+	}//end for-in loop
+
+	createDeformers($jigglePlanes, $stiffness, $dampening, $weight);
+
+}

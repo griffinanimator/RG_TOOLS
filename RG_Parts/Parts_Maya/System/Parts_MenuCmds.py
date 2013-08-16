@@ -16,6 +16,7 @@ class Parts_Menu():
         
         cmds.menuItem( label='RigNodeUI', c=self.load_rigNodeUi)
         cmds.menuItem( label='PartsUI', c=self.load_partsUi)
+        cmds.menuItem( label='Utils', c=self.load_utils)
 
     def load_rigNodeUi(self, *args):
         #IconPath = os.environ['Parts_Maya_Icons']
@@ -27,4 +28,10 @@ class Parts_Menu():
     def load_partsUi(self, *args):
         import System.Parts_UI as Parts_UI
         ui = Parts_UI.Parts_UI()
+
+    def load_utils(self, *args):
+        import System.Utils_UI as Utils_UI
+        reload(Utils_UI)
+        ui = Utils_UI.Utils_UI()
+
   

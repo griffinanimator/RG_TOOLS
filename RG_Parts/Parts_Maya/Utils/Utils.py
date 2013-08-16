@@ -1,4 +1,5 @@
 # General utility functions
+import maya.cmds as cmds
 
 def findHighestTrailingNumber(names, basename):
     import re
@@ -19,3 +20,10 @@ def findHighestTrailingNumber(names, basename):
                     highestValue = numericalElement
              
     return highestValue
+
+
+def tempParent(self, *args):
+    print 'tp'
+    sel = cmds.ls(sl=True)
+    constraint = cmds.parentConstraint(sel[0], sel[1], mo=False)
+    cmds.delete(constraint)
