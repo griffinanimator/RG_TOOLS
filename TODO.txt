@@ -1,0 +1,4 @@
+1. Added pivot point control to feet.
+2. Added FK and mid ik to spine.
+3. Arm FK groups should have frozen translate to accomadate stretch.
+4.  Add terminator to FK arms and legs
