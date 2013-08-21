@@ -39,7 +39,7 @@ def create_follicle(oNurbs, uPos=0.0, vPos=0.0):
                 print p
     
         return oFoll
-    
+"""    
 # To run
 oFoll = create_follicle(pm.selected()[0], 0.5, 0.5)
 
@@ -48,3 +48,4 @@ myObject = pm.selected()[0]
 howManyFollicles = 8
 for i in range(0,howMany):
     oFoll = create_follicle(myObject, i/(howManyFollicles-1.00), 0.5)
+"""
