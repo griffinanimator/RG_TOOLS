@@ -1,0 +1,299 @@
+[filterNode_settings]
+	metaRig = False
+	searchAttrs = ,
+	hierarchy = True
+	searchPattern = ,
+	filterPriority = ,
+	transformClamp = True
+	nodeTypes = ,
+	incRoots = True
+[poseData]
+	[[jnt_r_eye]]
+		ID = 14
+		longName = |jnt_neck|jnt_head|jnt_r_eye
+		[[[attrs]]]
+			translateX = 0.64582503144
+			translateY = -1.21313213785
+			translateZ = 0.655957
+			scaleX = 1.0
+			scaleY = 1.0
+			visibility = True
+			rotateX = 0.0
+			rotateY = 0.0
+			rotateZ = 0.0
+			radius = 0.2
+			scaleZ = 1.0
+	[[jnt_r_lipCorner1]]
+		ID = 7
+		longName = |jnt_neck|jnt_head|jnt_jaw|jnt_r_lipCorner1
+		[[[attrs]]]
+			translateX = 1.42051745105
+			translateY = 0.461492930491
+			translateZ = 0.45916
+			scaleX = 1.0
+			scaleY = 1.0
+			visibility = True
+			rotateX = 0.0
+			rotateY = 27.4615054786
+			rotateZ = 0.0
+			radius = 0.2
+			scaleZ = 1.0
+	[[jnt_l_lidUp]]
+		ID = 12
+		longName = |jnt_neck|jnt_head|jnt_l_lidUp
+		[[[attrs]]]
+			translateX = 0.645824732287
+			translateY = -1.21313225535
+			translateZ = -0.655956882515
+			scaleX = 1.0
+			scaleY = 1.0
+			visibility = True
+			rotateX = 0.0
+			rotateY = 0.0
+			rotateZ = 0.0
+			radius = 0.2
+			scaleZ = 1.0
+	[[jnt_head]]
+		ID = 18
+		longName = |jnt_neck|jnt_head
+		[[[attrs]]]
+			translateX = 0.0
+			translateY = 1.13478049084
+			translateZ = 0.0272825170001
+			scaleX = 1.0
+			scaleY = 1.0
+			visibility = True
+			rotateX = 0.0
+			rotateY = 0.0
+			rotateZ = 0.0
+			radius = 0.575231136483
+			scaleZ = 1.0
+	[[jnt_neck]]
+		ID = 0
+		longName = |jnt_neck
+		[[[attrs]]]
+			translateX = 0.0
+			translateY = 7.54866934577
+			translateZ = -0.83703730365
+			scaleX = 1.0
+			scaleY = 1.0
+			visibility = True
+			rotateX = 0.0
+			rotateY = 0.0
+			rotateZ = 0.0
+			radius = 0.5
+			scaleZ = 1.0
+	[[joint7]]
+		ID = 1
+		longName = |jnt_neck|jnt_head|joint7
+		[[[attrs]]]
+			translateX = 2.45446863866
+			translateY = 1.28369537222e-16
+			translateZ = 5.45001519173e-16
+			scaleX = 1.0
+			scaleY = 1.0
+			visibility = True
+			rotateX = 0.0
+			rotateY = 0.0
+			rotateZ = 0.0
+			radius = 0.575231136483
+			scaleZ = 1.0
+	[[jnt_l_eye]]
+		ID = 10
+		longName = |jnt_neck|jnt_head|jnt_l_eye
+		[[[attrs]]]
+			translateX = 0.645824732287
+			translateY = -1.21313225535
+			translateZ = -0.655956882515
+			scaleX = 1.0
+			scaleY = 1.0
+			visibility = True
+			rotateX = 0.0
+			rotateY = 0.0
+			rotateZ = 0.0
+			radius = 0.2
+			scaleZ = 1.0
+	[[jnt_l_lipCorner]]
+		ID = 3
+		longName = |jnt_neck|jnt_head|jnt_jaw|jnt_l_lipCorner
+		[[[attrs]]]
+			translateX = 1.4205200914
+			translateY = 0.461490680251
+			translateZ = -0.459160183814
+			scaleX = 1.0
+			scaleY = 1.0
+			visibility = True
+			rotateX = 0.0
+			rotateY = 27.4615054786
+			rotateZ = 0.0
+			radius = 0.2
+			scaleZ = 1.0
+	[[jnt_lipUp]]
+		ID = 13
+		longName = |jnt_neck|jnt_head|jnt_lipUp
+		[[[attrs]]]
+			translateX = 0.0405327290484
+			translateY = -2.0337293151
+			translateZ = -0.0113048213589
+			scaleX = 1.0
+			scaleY = 1.0
+			visibility = True
+			rotateX = 0.0
+			rotateY = 15.6801233648
+			rotateZ = 0.0
+			radius = 0.2
+			scaleZ = 1.0
+	[[jnt_jaw]]
+		ID = 8
+		longName = |jnt_neck|jnt_head|jnt_jaw
+		[[[attrs]]]
+			translateX = 0.37856583102
+			translateY = -0.518370426767
+			translateZ = 2.56710535312e-16
+			scaleX = 1.0
+			scaleY = 1.0
+			visibility = True
+			rotateX = 0.0
+			rotateY = 0.0
+			rotateZ = -22.1430452301
+			radius = 0.529193485415
+			scaleZ = 1.0
+	[[jnt_r_lidDown]]
+		ID = 16
+		longName = |jnt_neck|jnt_head|jnt_r_lidDown
+		[[[attrs]]]
+			translateX = 0.64582503144
+			translateY = -1.21313213785
+			translateZ = 0.655957
+			scaleX = 1.0
+			scaleY = 1.0
+			visibility = True
+			rotateX = 0.0
+			rotateY = 0.0
+			rotateZ = 0.0
+			radius = 0.2
+			scaleZ = 1.0
+	[[jnt_l_lidDown]]
+		ID = 11
+		longName = |jnt_neck|jnt_head|jnt_l_lidDown
+		[[[attrs]]]
+			translateX = 0.645824732287
+			translateY = -1.21313225535
+			translateZ = -0.655956882515
+			scaleX = 1.0
+			scaleY = 1.0
+			visibility = True
+			rotateX = 0.0
+			rotateY = 0.0
+			rotateZ = 0.0
+			radius = 0.2
+			scaleZ = 1.0
+	[[jnt_r_lipDown]]
+		ID = 6
+		longName = |jnt_neck|jnt_head|jnt_jaw|jnt_r_lipDown
+		[[[attrs]]]
+			translateX = 1.47358018106
+			translateY = 0.391692292357
+			translateZ = 0.192449
+			scaleX = 1.0
+			scaleY = 1.0
+			visibility = True
+			rotateX = 0.0
+			rotateY = 9.85299429248
+			rotateZ = 0.0
+			radius = 0.2
+			scaleZ = 1.0
+	[[jnt_r_lipCorner]]
+		ID = 5
+		longName = |jnt_neck|jnt_head|jnt_jaw|jnt_r_lipCorner
+		[[[attrs]]]
+			translateX = 1.42051745105
+			translateY = 0.461492930491
+			translateZ = 0.45916
+			scaleX = 1.0
+			scaleY = 1.0
+			visibility = True
+			rotateX = 0.0
+			rotateY = 27.4615054786
+			rotateZ = 0.0
+			radius = 0.2
+			scaleZ = 1.0
+	[[jnt_l_lipDown]]
+		ID = 4
+		longName = |jnt_neck|jnt_head|jnt_jaw|jnt_l_lipDown
+		[[[attrs]]]
+			translateX = 1.47358233048
+			translateY = 0.391690687905
+			translateZ = -0.192449369403
+			scaleX = 1.0
+			scaleY = 1.0
+			visibility = True
+			rotateX = 0.0
+			rotateY = 9.85299429248
+			rotateZ = 0.0
+			radius = 0.2
+			scaleZ = 1.0
+	[[joint5]]
+		ID = 2
+		longName = |jnt_neck|jnt_head|jnt_jaw|joint5
+		[[[attrs]]]
+			translateX = 1.56440738469
+			translateY = -3.33066907388e-16
+			translateZ = 3.47368219676e-16
+			scaleX = 1.0
+			scaleY = 1.0
+			visibility = True
+			rotateX = 0.0
+			rotateY = 0.0
+			rotateZ = 0.0
+			radius = 0.529193485415
+			scaleZ = 1.0
+	[[jnt_r_lipUp1]]
+		ID = 17
+		longName = |jnt_neck|jnt_head|jnt_r_lipUp1
+		[[[attrs]]]
+			translateX = -0.0163726939017
+			translateY = -1.93133885752
+			translateZ = 0.256828
+			scaleX = 1.0
+			scaleY = 1.0
+			visibility = True
+			rotateX = 0.0
+			rotateY = 15.6801233648
+			rotateZ = 0.0
+			radius = 0.2
+			scaleZ = 1.0
+	[[jnt_l_lipUp1]]
+		ID = 9
+		longName = |jnt_neck|jnt_head|jnt_l_lipUp1
+		[[[attrs]]]
+			translateX = -0.0163752938544
+			translateY = -1.93133961605
+			translateZ = -0.256827841847
+			scaleX = 1.0
+			scaleY = 1.0
+			visibility = True
+			rotateX = 0.0
+			rotateY = 15.6801233648
+			rotateZ = 0.0
+			radius = 0.2
+			scaleZ = 1.0
+	[[jnt_r_lidUp]]
+		ID = 15
+		longName = |jnt_neck|jnt_head|jnt_r_lidUp
+		[[[attrs]]]
+			translateX = 0.64582503144
+			translateY = -1.21313213785
+			translateZ = 0.655957
+			scaleX = 1.0
+			scaleY = 1.0
+			visibility = True
+			rotateX = 0.0
+			rotateY = 0.0
+			rotateZ = 0.0
+			radius = 0.2
+			scaleZ = 1.0
+[info]
+	date = Fri Aug 23 17:23:57 2013
+	metaPose = False
+	author = Griffy

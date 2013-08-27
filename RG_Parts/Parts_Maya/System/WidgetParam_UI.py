@@ -79,7 +79,7 @@ class PartParam_UI:
         cmds.setParent(self.UIElements["guiFlowLayout1"])
         self.UIElements["create_button"] = cmds.button(label='Create', width=buttonWidth, height=buttonHeight, bgc=[1.0, 1.0, 1.0], p=self.UIElements["guiFlowLayout4"], command=self.createPart) 
         self.UIElements["edit_button"] = cmds.button(label='Edit', width=buttonWidth, height=buttonHeight, bgc=[1.0, 1.0, 1.0], p=self.UIElements["guiFlowLayout4"]) 
-        self.UIElements["mirror_button"] = cmds.button(label='Mirror', width=buttonWidth, height=buttonHeight, bgc=[1.0, 1.0, 1.0], p=self.UIElements["guiFlowLayout4"])               
+        self.UIElements["mirror_button"] = cmds.button(label='Mirror', width=buttonWidth, height=buttonHeight, bgc=[1.0, 1.0, 1.0], p=self.UIElements["guiFlowLayout4"], command=self.mirrorWidget)               
         cmds.showWindow(self.windowName)
 
     def createPart(self, *args):
@@ -119,6 +119,8 @@ class PartParam_UI:
 
         partsLen = len(parts)
 
+        # Setup joints and stretchy ik
+        pjntList = []
         for p in range(len(parts)):  
             contained_nodes.append(parts[p])  
                 
@@ -126,37 +128,92 @@ class PartParam_UI:
                 partList = (parts[p], parts[p+1]) 
      
                 partJoint = Utils_Part.createPJoints(partList)
-
+                pjntList.append(partJoint[0])
                 for j in partJoint:
                     contained_nodes.append(j)
                     # Set drawing overide on joints
                     cmds.setAttr(j + '.overrideEnabled', 1)
                     cmds.setAttr(j + '.overrideDisplayType', 1)
-         
+
+                """
                 ikHandleName = partJoint[0].replace('pjnt', 'ikh')
                 ikInfo = Utils_Part.scStretchyIk(partList, partJoint, ikHandleName)
                 for i in ikInfo[0]:
                     contained_nodes.append(i)
+                """
 
                 # Connect ikHandles, parts, and joints
                 ptca =cmds.pointConstraint(partList[0], partJoint[0], mo=True)
+                ptcb =cmds.pointConstraint(partList[1], partJoint[1], mo=True)
 
-                ptcb = cmds.pointConstraint(partList[1], ikInfo[0][0])
+                #ptcb = cmds.pointConstraint(partList[1], ikInfo[0][0])
 
                 contained_nodes.append(ptca[0])
                 contained_nodes.append(ptcb[0])
                 
             if p != 0:
                 cmds.aimConstraint(parts[p], parts[p-1])
-
-        # Cleanup nodes and add to a container.
         
-        containerName = (userDefinedName+'_container_' + num)
+        # Cleanup nodes and add to a container.
+
+        jntGrpName = partRoot[1].replace('PartRoot', 'PartJoints')
+        jntGrp = cmds.group(n=jntGrpName, em=True)
+        pgPos = cmds.xform(partRoot[1], q=True, ws=True, t=True)
+        cmds.xform(jntGrp, ws=True, t=pgPos)
+
+        for jnt in pjntList:
+            cmds.parent(jnt, jntGrp)
+
+        containerName = ('Part_Container_' + num + '_' + userDefinedName)
         con1 = cmds.container(n=containerName)
         for i in contained_nodes:
             cmds.container(containerName, edit=True, addNode=i, inc=True, ish=True, ihb=True, iha=True)
 
 
+    def mirrorWidget(self, *args):
+        print "Mirror Widget"
+        contained_nodes = []
 
+        # Selected part in var
+        selPart = cmds.ls(sl=True, type='transform')
+        print selPart
 
+        # Get the part group
+        partParent = cmds.listRelatives(selPart[0], p=True)
 
+        partChildren = cmds.listRelatives(selPart[0], c=True, type='transform')
+        
+        numParts = len(partChildren)
+        
+        tmpItemA = selPart[0].partition('PartRoot_')[2]
+        tmpItemB = tmpItemA.partition('_')
+        userDefinedName = tmpItemB[2]
+        num = tmpItemB[0]
+
+        tpos =  cmds.xform(selPart[0], q=True, ws=True, t=True)
+        pos = [-tpos[0], tpos[1], tpos[2]]
+
+        jntGrp = partParent[0].replace('PartRoot', 'PartJoints')
+        partJoints = cmds.listRelatives(jntGrp, c=True, type='joint')
+        print partJoints
+
+        #  Try mirror joints and build parts at pos
+
+        """
+        partRoot = Utils_Part.rigNodeRoot(numParts, userDefinedName, pos, num)
+        
+        contained_nodes.append(partRoot[0])
+        contained_nodes.append(partRoot[1])
+
+        pos = self.csv_info['partInfo'][selectedIndex][1]
+        parts = Utils_Part.rigNode(userDefinedName, numParts, partRoot, pos, num)
+
+        partsLen = len(parts)
+
+        
+        for p in range(len(parts)):  
+            contained_nodes.append(parts[p])  
+            if p != 0:
+                    cmds.aimConstraint(parts[p], parts[p-1])
+
+        """

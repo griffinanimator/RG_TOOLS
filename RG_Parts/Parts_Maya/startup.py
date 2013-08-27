@@ -75,6 +75,6 @@ print "Trying to load settings"
 startup = pm.evalDeferred('import RG_Parts.Parts_Maya.settings')
 
 # Setup Maya prefs to match Max
-cmds.upAxis( ax='z', rv=True )
-cmds.currentUnit( linear='ft' )
+cmds.upAxis( ax='y', rv=True )
+cmds.currentUnit( linear='cm' )
 cmds.currentUnit( time='ntsc' )

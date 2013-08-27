@@ -7,9 +7,12 @@ reload(utils)
 
 def createJoints(prefix, lytObs, *args):
     print "CreateJoints"
+
     cmds.select(d=True)
 
     ik_joints = []
+
+    jointOrientation = 'xyz'
 
     for item in lytObs:
         """ item[0] will be the joint
@@ -34,7 +37,7 @@ def createJoints(prefix, lytObs, *args):
             cmds.parent(joint, jointParent) 
 
     for jnt in ik_joints:
-        cmds.joint(jnt, e=True, oj='xyz', secondaryAxisOrient='yup', ch=True, zso=True)
+        cmds.joint(jnt, e=True, oj=jointOrientation, secondaryAxisOrient='yup', ch=True, zso=True)
 
 
     return ik_joints  
@@ -112,6 +115,7 @@ def createPJoints(parts, *args):
     jointList.append(pjntR)
     jointList.append(pjntE)
     cmds.select(d=True)
+
     return jointList
 
 
@@ -121,7 +125,7 @@ def rigNode(userDefinedName, numParts, pParent, pos, num, *args):
         val = numParts
         p = pos[i]
 
-        name = userDefinedName + '_' + 'Part_Shape_' + str(i)
+        name = 'Part_Shape_' + num + '_' + str(i) + '_' + userDefinedName 
 
         # Create a transform
         tform = cmds.createNode("transform", n=name.replace('_Shape', '') )       
@@ -147,7 +151,7 @@ def rigNodeRoot(numParts, userDefinedName, pos, num, *args):
 
     val = numParts+1
     # Create a transform
-    name = userDefinedName + '_' + 'PartRoot_Shape_' + num
+    name = 'PartRoot_Shape_' + num + '_' + userDefinedName
 
     tform = cmds.createNode('transform', name=name.replace('_Shape', ''))
     # Create an RG_Part node and parent to the transform
@@ -157,7 +161,7 @@ def rigNodeRoot(numParts, userDefinedName, pos, num, *args):
     cmds.select(d=True)
 
     # Create a group for rigNodes
-    grp = cmds.group(n=userDefinedName + '_PartRoot_Grp_' + num, em=True)
+    grp = cmds.group(n='PartRoot_Grp_' + num + '_' + userDefinedName, em=True)
     cmds.xform(grp, ws=True, t=pos)
     cmds.parent(rNode, grp)
 
@@ -425,6 +429,7 @@ def connectThroughBC(parentsA, parentsB, children, suffix):
 def findHighestTrailingNumber(names, basename):
     print 'In FHTN'
     print names
+    print basename
     import re
        
     highestValue = 0
@@ -432,13 +437,13 @@ def findHighestTrailingNumber(names, basename):
     for n in names:
         n=str(n)
         print n
-        print type(n)
+
         print basename
         print n.find(basename)
         if n.find(basename) >= 0:
             print 'hi'
 
-            suffix = n.partition(basename)[2]
+            suffix = n.partition(basename)[2][0]
             print suffix
             if re.match("^[0-9]*$", suffix):
                 print suffix
