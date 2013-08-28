@@ -106,7 +106,7 @@ class PartParam_UI:
         # Create a number suffix
         num = str(Utils_Part.findHighestTrailingNumber(parts, 'PartRoot_Shape_'))
 
-        userDefinedName = udn + menuItem + '_' + side + num
+        userDefinedName = udn + menuItem + '__' + side + num
 
         pos = self.csv_info['partInfo'][selectedIndex][1][0]
 
@@ -172,48 +172,57 @@ class PartParam_UI:
 
     def mirrorWidget(self, *args):
         print "Mirror Widget"
-        contained_nodes = []
+        mirror_contained_nodes = []
 
         # Selected part in var
         selPart = cmds.ls(sl=True, type='transform')
-        print selPart
 
         # Get the part group
         partParent = cmds.listRelatives(selPart[0], p=True)
-
-        partChildren = cmds.listRelatives(selPart[0], c=True, type='transform')
         
+
+        partChildren = cmds.listRelatives(partParent, ad=True)
+  
         numParts = len(partChildren)
         
         tmpItemA = selPart[0].partition('PartRoot_')[2]
         tmpItemB = tmpItemA.partition('_')
         userDefinedName = tmpItemB[2]
-        num = tmpItemB[0]
 
-        tpos =  cmds.xform(selPart[0], q=True, ws=True, t=True)
-        pos = [-tpos[0], tpos[1], tpos[2]]
+        instanceName =  userDefinedName.partition('__')[2]
 
-        jntGrp = partParent[0].replace('PartRoot', 'PartJoints')
-        partJoints = cmds.listRelatives(jntGrp, c=True, type='joint')
-        print partJoints
+        if instanceName.startswith('l') == True:
+            mirrorUserDefinedName = userDefinedName.replace('__l', '__r')
+        if instanceName.startswith('r') == True:
+            mirrorUserDefinedName = userDefinedName.replace('__r', '__l')
 
-        #  Try mirror joints and build parts at pos
 
-        """
-        partRoot = Utils_Part.rigNodeRoot(numParts, userDefinedName, pos, num)
+        newPartGrpName = partParent[0].replace(userDefinedName, mirrorUserDefinedName)
+        mirrorPart = cmds.duplicate(partParent[0], n=newPartGrpName, rc=True) 
+
+        mirrorPartJointGrpName = newPartGrpName.replace('PartRoot', 'PartJoints')
+        partJointGrpName = mirrorPartJointGrpName.replace(mirrorUserDefinedName, userDefinedName)
+        mirrorJntGrp = cmds.duplicate(partJointGrpName, n=mirrorPartJointGrpName, rc=True) 
         
-        contained_nodes.append(partRoot[0])
-        contained_nodes.append(partRoot[1])
-
-        pos = self.csv_info['partInfo'][selectedIndex][1]
-        parts = Utils_Part.rigNode(userDefinedName, numParts, partRoot, pos, num)
-
-        partsLen = len(parts)
-
+        originalScale = cmds.xform(partParent[0], q=True, s=True)[0]
         
-        for p in range(len(parts)):  
-            contained_nodes.append(parts[p])  
-            if p != 0:
-                    cmds.aimConstraint(parts[p], parts[p-1])
+        cmds.scale(-originalScale, mirrorPart[0], x=True)
 
-        """
+        cmds.scale(-originalScale, mirrorJntGrp, x=True)
+        
+        newPartChildren = cmds.listRelatives(mirrorPart[0], ad=True)
+        mirrorParts = cmds.listRelatives(mirrorPart[0], ad=True)
+  
+        for p in range(len(newPartChildren)):
+            newPartName = partChildren[p].replace(userDefinedName, mirrorUserDefinedName)
+            cmds.rename(newPartChildren[p], newPartName)
+            mirror_contained_nodes.append(newPartName)
+
+        num = str(Utils_Part.findHighestTrailingNumber(mirrorParts, 'PartRoot_Shape_'))
+        containerName = ('Part_Container_' + num + '_' + mirrorUserDefinedName)
+        con1 = cmds.container(n=containerName)
+        for i in mirror_contained_nodes:
+            print i
+            try:
+                cmds.container(containerName, edit=True, addNode=i, inc=True, ish=True, ihb=True, iha=True, f=True)
+            except: pass
