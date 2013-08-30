@@ -27,6 +27,7 @@ class Parts_Menu():
 
     def load_partsUi(self, *args):
         import System.Parts_UI as Parts_UI
+        reload (Parts_UI)
         ui = Parts_UI.Parts_UI()
 
     def load_utils(self, *args):

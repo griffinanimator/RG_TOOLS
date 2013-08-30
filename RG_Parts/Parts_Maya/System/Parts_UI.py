@@ -61,7 +61,6 @@ class Parts_UI:
         
         widgetClass = getattr(mod, mod.CLASS_NAME)
         widgetInstance = widgetClass()
-        print widgetClass
         widgetInstance.install()
 
 
@@ -77,6 +76,3 @@ class Parts_UI:
                 returnModules.append(file)
                 
         return returnModules
-
-
-

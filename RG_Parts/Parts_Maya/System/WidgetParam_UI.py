@@ -83,6 +83,12 @@ class PartParam_UI:
         cmds.showWindow(self.windowName)
 
     def createPart(self, *args):
+        # TODO: Add stuff to namespaces.
+        # First check to see if a master widget container exists.  If not, create one.
+        MasterWidgetContainerName = 'Master_Widget_Container'
+        if cmds.objExists(MasterWidgetContainerName) == False:
+            masterWidgetContainer = cmds.container(n=MasterWidgetContainerName)
+
         contained_nodes = []
         """ Collect info from the UI to build part """
         un = cmds.textField(self.UIElements["untext_field"], q=True, text=True)
@@ -115,6 +121,7 @@ class PartParam_UI:
         contained_nodes.append(partRoot[1])
 
         pos = self.csv_info['partInfo'][selectedIndex][1]
+
         parts = Utils_Part.rigNode(userDefinedName, numParts, partRoot, pos, num)
 
         partsLen = len(parts)
@@ -169,6 +176,8 @@ class PartParam_UI:
         for i in contained_nodes:
             cmds.container(containerName, edit=True, addNode=i, inc=True, ish=True, ihb=True, iha=True)
 
+        cmds.container('Master_Widget_Container', edit=True, addNode=containerName, inc=True, ish=True, ihb=True, iha=True)
+
 
     def mirrorWidget(self, *args):
         print "Mirror Widget"
@@ -180,49 +189,84 @@ class PartParam_UI:
         # Get the part group
         partParent = cmds.listRelatives(selPart[0], p=True)
         
+        partChildren = cmds.listRelatives(selPart, c=True, type='transform')
 
-        partChildren = cmds.listRelatives(partParent, ad=True)
-  
-        numParts = len(partChildren)
-        
+        # Define the mirrored naming prefix
         tmpItemA = selPart[0].partition('PartRoot_')[2]
         tmpItemB = tmpItemA.partition('_')
         userDefinedName = tmpItemB[2]
 
         instanceName =  userDefinedName.partition('__')[2]
 
+        mirrorUserDefinedName = 'c'
         if instanceName.startswith('l') == True:
             mirrorUserDefinedName = userDefinedName.replace('__l', '__r')
         if instanceName.startswith('r') == True:
             mirrorUserDefinedName = userDefinedName.replace('__r', '__l')
 
+        #newPartGrpName = partParent[0].replace(userDefinedName, mirrorUserDefinedName)
+        #mirrorPart = cmds.duplicate(partParent[0], n=newPartGrpName, rc=True, un=False, ic=False, po=True)
 
-        newPartGrpName = partParent[0].replace(userDefinedName, mirrorUserDefinedName)
-        mirrorPart = cmds.duplicate(partParent[0], n=newPartGrpName, rc=True) 
+        parts = cmds.ls(et='RG_PartRoot')
+        numParts = len(partChildren)
+        pos = cmds.xform(selPart, q=True, ws=True, t=True)
 
-        mirrorPartJointGrpName = newPartGrpName.replace('PartRoot', 'PartJoints')
-        partJointGrpName = mirrorPartJointGrpName.replace(mirrorUserDefinedName, userDefinedName)
-        mirrorJntGrp = cmds.duplicate(partJointGrpName, n=mirrorPartJointGrpName, rc=True) 
+        num = str(Utils_Part.findHighestTrailingNumber(parts, 'PartRoot_Shape_'))
         
+        partRoot = Utils_Part.rigNodeRoot(numParts, mirrorUserDefinedName, pos, num)
+        mirrorPartGrp = partRoot[1]
+
+        posList = []
+        for item in partChildren:
+            pos = cmds.xform(item, q=True, ws=True, t=True)
+            posList.append(pos)
+        parts = Utils_Part.rigNode(mirrorUserDefinedName, numParts, partRoot, posList, num)
+
+        pjntList = []
+        partsLen = len(parts)
+        for p in range(len(parts)):
+            mirror_contained_nodes.append(parts[p])  
+                
+            if p < partsLen-1:
+                partList = (parts[p], parts[p+1]) 
+     
+                partJoint = Utils_Part.createPJoints(partList)
+                pjntList.append(partJoint[0])
+                for j in partJoint:
+                    mirror_contained_nodes.append(j)
+                    # Set drawing overide on joints
+                    cmds.setAttr(j + '.overrideEnabled', 1)
+                    cmds.setAttr(j + '.overrideDisplayType', 1)
+
+                # Connect ikHandles, parts, and joints
+                ptca =cmds.pointConstraint(partList[0], partJoint[0], mo=True)
+                ptcb =cmds.pointConstraint(partList[1], partJoint[1], mo=True)
+
+                mirror_contained_nodes.append(ptca[0])
+                mirror_contained_nodes.append(ptcb[0])
+
+            if p != 0:
+                cmds.aimConstraint(parts[p], parts[p-1])
+        
+        # Cleanup nodes and add to a container.
+
+        mirrorJntGrpName = partRoot[1].replace('PartRoot', 'PartJoints')
+        mirrorJntGrp = cmds.group(n=mirrorJntGrpName, em=True)
+        pgPos = cmds.xform(partRoot[1], q=True, ws=True, t=True)
+        cmds.xform(mirrorJntGrp, ws=True, t=[0.0, pgPos[1], pgPos[2]])
+
+        # Negative scale on new groups for mirroring
         originalScale = cmds.xform(partParent[0], q=True, s=True)[0]
         
-        cmds.scale(-originalScale, mirrorPart[0], x=True)
+        cmds.scale(-originalScale, mirrorPartGrp, x=True)
 
-        cmds.scale(-originalScale, mirrorJntGrp, x=True)
-        
-        newPartChildren = cmds.listRelatives(mirrorPart[0], ad=True)
-        mirrorParts = cmds.listRelatives(mirrorPart[0], ad=True)
-  
-        for p in range(len(newPartChildren)):
-            newPartName = partChildren[p].replace(userDefinedName, mirrorUserDefinedName)
-            cmds.rename(newPartChildren[p], newPartName)
-            mirror_contained_nodes.append(newPartName)
+        cmds.scale(-originalScale, mirrorJntGrpName, x=True)
 
-        num = str(Utils_Part.findHighestTrailingNumber(mirrorParts, 'PartRoot_Shape_'))
+        for jnt in pjntList:
+            cmds.parent(jnt, mirrorJntGrp)
+
         containerName = ('Part_Container_' + num + '_' + mirrorUserDefinedName)
         con1 = cmds.container(n=containerName)
         for i in mirror_contained_nodes:
-            print i
-            try:
-                cmds.container(containerName, edit=True, addNode=i, inc=True, ish=True, ihb=True, iha=True, f=True)
-            except: pass
+            cmds.container(containerName, edit=True, addNode=i, inc=True, ish=True, ihb=True, iha=True)
+        cmds.container('Master_Widget_Container', edit=True, addNode=containerName, inc=True, ish=True, ihb=True, iha=True)

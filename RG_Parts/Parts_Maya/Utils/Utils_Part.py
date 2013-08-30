@@ -14,12 +14,17 @@ def createJoints(prefix, lytObs, *args):
 
     jointOrientation = 'xyz'
 
+
+
     for item in lytObs:
         """ item[0] will be the joint
             item[1] will be the position
             item[2] will be the parent        
         """
+        
         newJointName = prefix+item[0]
+        print prefix
+        print item[0]
 
         cmds.select(d=True)
         if cmds.objExists(newJointName) == True:
@@ -156,13 +161,13 @@ def rigNodeRoot(numParts, userDefinedName, pos, num, *args):
     tform = cmds.createNode('transform', name=name.replace('_Shape', ''))
     # Create an RG_Part node and parent to the transform
     rNode = cmds.createNode ('RG_PartRoot', n=name, p=tform)
-    pos = [pos[0], pos[1]+1, pos[2]]
+    pos = [pos[0], pos[1], pos[2]]
     cmds.xform(tform, t=pos, ws=True)
     cmds.select(d=True)
 
     # Create a group for rigNodes
     grp = cmds.group(n='PartRoot_Grp_' + num + '_' + userDefinedName, em=True)
-    cmds.xform(grp, ws=True, t=pos)
+    cmds.xform(grp, ws=True, t=[0.0, pos[1], pos[2]])
     cmds.parent(rNode, grp)
 
     return([tform, grp])
@@ -309,7 +314,9 @@ def createStretchyIk(ikjnt_info, rjnt_info, control, ikHandleName, pvName, suffi
     lctrR = cmds.spaceLocator(n='lctrDis_Root_' + suffix, p=rootPos)
     lctrE = cmds.spaceLocator(n='lctrDis_End_' + suffix, p=endPos)
     disDim = cmds.distanceDimension(sp=(rootPos), ep=(endPos))
+    cmds.rename('distanceDimensionShape1', 'disDimNode_Stretch_' + suffix + 'Shape')
     cmds.rename('distanceDimension1', 'disDimNode_Stretch_' + suffix)
+    
 
     cmds.connectAttr(lctrR[0] + 'Shape.worldPosition[0]', 'disDimNode_Stretch_' + suffix + 'Shape' + '.startPoint', f=True)
     cmds.connectAttr(lctrE[0] + 'Shape.worldPosition[0]', 'disDimNode_Stretch_' + suffix + 'Shape' + '.endPoint',f=True)
@@ -338,7 +345,7 @@ def createStretchyIk(ikjnt_info, rjnt_info, control, ikHandleName, pvName, suffi
     # Connect the distance dimension so we always know the current length of the leg.
     # If we are working in feet I need a unit conversion node.
     units = cmds.currentUnit( query=True, linear=True )
-    print units
+
     if units == 'ft':
         ucStretch = cmds.shadingNode("unitConversion", asUtility=True, n='ucNode_RStretch_' + suffix)
         cmds.setAttr (ucStretch + '.conversionFactor', 0.0328)
@@ -428,30 +435,19 @@ def connectThroughBC(parentsA, parentsB, children, suffix):
 
 def findHighestTrailingNumber(names, basename):
     print 'In FHTN'
-    print names
-    print basename
+
     import re
        
     highestValue = 0
     
     for n in names:
         n=str(n)
-        print n
-
-        print basename
-        print n.find(basename)
         if n.find(basename) >= 0:
-            print 'hi'
-
             suffix = n.partition(basename)[2][0]
-            print suffix
             if re.match("^[0-9]*$", suffix):
-                print suffix
                 numericalElement = int(suffix)
-                print numericalElement
                 
                 if numericalElement >= highestValue:
                     highestValue = numericalElement +1
-                    print highestValue
-             
+            
     return highestValue

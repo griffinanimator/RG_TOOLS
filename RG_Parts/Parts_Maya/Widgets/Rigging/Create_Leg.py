@@ -21,12 +21,9 @@ class Create_Leg:
 
     def install(self, *args):
         # Collect layout info
-        print "Install"
         sel = cmds.ls(sl=True)
   
     	lytObs = part_utils.collectLayoutInfo(sel)
-        print lytObs
-        #del lytObs[-1]
 
         # Create an rig joint chain
         self.jnt_info['rigJnts'] = part_utils.createJoints('rigj_', lytObs)
@@ -36,16 +33,18 @@ class Create_Leg:
         self.jnt_info['fkJnts'] = part_utils.createJoints('fkj_', lytObs)
       
         # Define names for components involved in ik setup
-        userDefinedName = sel[0].partition('PartRoot_')[0]
+        tmpVar = sel[0].partition('PartRoot_')[2]
+        userDefinedName =tmpVar.partition('_')[2]
+        print userDefinedName
 
         #ikHandleName = "ikHandle_%s_leg" % (side)
-        ikHandleName = userDefinedName + 'ikh'
+        ikHandleName = userDefinedName + '_ikh'
         
         #ctrlName = "ctrl_%s_leg" % (side)
-        ctrlName = userDefinedName + 'ctrl'
+        ctrlName = userDefinedName + '_ctrl'
         
         #pvName = "pv_%s_leg" % (side)
-        pvName = userDefinedName + 'pv_ctrl'
+        pvName = userDefinedName + '_pv_ctrl'
         #suffix = "%s_leg" % (side)
         suffix = userDefinedName 
 
@@ -209,9 +208,3 @@ class Create_Leg:
 
         # Hookup control vis for the switch
         # NOTE:  This import is temp
-        
-
-
-
-
-
