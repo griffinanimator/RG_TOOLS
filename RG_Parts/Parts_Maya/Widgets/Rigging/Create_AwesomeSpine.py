@@ -24,23 +24,21 @@ class Create_ASpine:
         print "Install"
         sel = cmds.ls(sl=True)
 
-        userDefinedName = sel[0].partition('PartRoot_')[0]
+        tmpVar = sel[0].partition('PartRoot_')[2]
+        userDefinedName = tmpVar.partition('_')[2]
   
         lytObs = part_utils.collectLayoutInfo(sel)
 
-        # Find the side we are on
-        #side = part_utils.getSide(self.lyt_info['layoutRoot'])
         # Create an rig joint chain
         self.jnt_info['rigJnts'] = part_utils.createJoints('rigj_', lytObs)
         # Create an ik joint chain
         self.jnt_info['iksJnts'] = part_utils.createJoints('ikSj_', lytObs)
         self.jnt_info['ikrJnts'] = part_utils.createJoints('ikRj_', lytObs)
-        #self.jnt_info['ikJnts'] = part_utils.createJoints('ikj_', lytObs)
 
         spl = len(self.jnt_info['iksJnts']) -1
 
-        # Create a new joint at the root and the top of the iksJoint chain.
-        rootJointList = (['ikBRoot_'+userDefinedName, cmds.xform(self.jnt_info['iksJnts'][0], q=True, ws=True, t=True)], ['ikTRoot_'+userDefinedName, cmds.xform(self.jnt_info['iksJnts'][spl], q=True, ws=True, t=True)])
+        # Create a new joint at the root, the mid, and the top of the iksJoint chain.
+        rootJointList = ([userDefinedName + '_ikBRoot', cmds.xform(self.jnt_info['iksJnts'][0], q=True, ws=True, t=True)], [userDefinedName + '_ikMRoot', cmds.xform(self.jnt_info['iksJnts'][2], q=True, ws=True, t=True)], [userDefinedName + '_ikTRoot', cmds.xform(self.jnt_info['iksJnts'][spl], q=True, ws=True, t=True)])
        
         rootJoints = []
         for i in rootJointList:
@@ -50,13 +48,11 @@ class Create_ASpine:
         self.jnt_info['rootJnts'] = rootJoints
         
         # Define names for components involved in ik setup
-        #ikHandleName = "ikHandle_%s_leg" % (side)
-        ikHandleName = userDefinedName + 'ikh'
-        #ctrlName = "ctrl_%s_leg" % (side)
-        ctrlName = userDefinedName + 'ctrl'
+        ikHandleName = userDefinedName + '_ikh'
+        ctrlName = userDefinedName + '_ctrl'
 
         # Draw a splineIK from the root to the last iksJnt.
-        ikSol = cmds.ikHandle(n='iks_spine_Ik', solver='ikSplineSolver', sj=self.jnt_info['iksJnts'][0], ee=self.jnt_info['iksJnts'][spl], ccv=True)
+        ikSol = cmds.ikHandle(n=userDefinedName + '_spine_Ik', solver='ikSplineSolver', sj=self.jnt_info['iksJnts'][0], ee=self.jnt_info['iksJnts'][spl], ccv=True)
         cmds.select(d=True)
         # Bind the splineIK curve to those 2 new joints.
         cmds.select('curve1', rootJoints)
@@ -142,7 +138,6 @@ class Create_ASpine:
         cmds.connectAttr(curveInfoNode+'.arcLength', mds+'.input1X')
         #cmds.connectAttr(curveInfoNode+'.arcLength', mda+'.input2X')
         crvLen = cmds.getAttr(curveInfoNode+'.arcLength')
-        print crvLen
         cmds.setAttr(mds+'.input2X', crvLen)
        
         # Connect stretch to joints
@@ -157,23 +152,12 @@ class Create_ASpine:
         ctrlAttrs = []
         
         for i in range(len(self.jnt_info['rootJnts'])):
-            ctrlName = userDefinedName + 'ctrl_' + str(i)
+            ctrlName = userDefinedName + '_ctrl_' + str(i)
+            print ctrlName
             ctrlPos = cmds.xform(self.jnt_info['rootJnts'][i], q=True, ws=True, t=True)
             # NOTE: Dynamically generate the control objects
             spineControl = part_utils.setupControlObject("SpineControl.ma", ctrlName, ctrlAttrs, ctrlPos, os.environ['Parts_Maya_Controls'])
             cmds.parentConstraint(spineControl, self.jnt_info['rootJnts'][i])
         
    
-
-
-
-            
-
-            
-
-        
-
-
-
-
  

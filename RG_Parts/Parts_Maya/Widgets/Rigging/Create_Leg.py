@@ -34,8 +34,7 @@ class Create_Leg:
       
         # Define names for components involved in ik setup
         tmpVar = sel[0].partition('PartRoot_')[2]
-        userDefinedName =tmpVar.partition('_')[2]
-        print userDefinedName
+        userDefinedName = tmpVar.partition('_')[2]
 
         #ikHandleName = "ikHandle_%s_leg" % (side)
         ikHandleName = userDefinedName + '_ikh'
@@ -55,7 +54,7 @@ class Create_Leg:
         #self.jnt_info['ikConstraints'] = constraints
 
         # Define foot attribute names
-        ctrlAttrs = ('twist', 'stretch', 'stretch_bend', 'foot_roll', 'roll_break', 'foot_twist', 'foot_bank', 'pivot_posX', 'pivot_posZ', 'toe_flap', 'twist_offset', 'ik_fk')
+        ctrlAttrs = ('twist', 'stretch', 'stretch_bend', 'foot_roll', 'roll_break', 'foot_twist', 'foot_bank', 'pivot_posX', 'pivot_posZ', 'toe_flap', 'twist_offset')
         
         # NOTE: Dynamically generate the control objects
         footControl = part_utils.setupControlObject("FootControl.ma", ctrlName, ctrlAttrs, lytObs[2][1], os.environ['Parts_Maya_Controls'])
@@ -68,14 +67,14 @@ class Create_Leg:
 
         # Create the stretchy ik chain
         ikInfo = part_utils.createStretchyIk(self.jnt_info['ikJnts'], self.jnt_info['rigJnts'], footControl, ikHandleName, pvName, suffix)
-        
+        self.foot_info['ikNodes'] = ikInfo
         
         # Setup the ik foot
         ikJntPos = []
         for jnt in self.jnt_info['ikJnts']:
             pos = cmds.xform(jnt, q=True, t=True, ws=True)
             ikJntPos.append(pos)
-        self.foot_info['footInfo'] = self.setupRGFoot(suffix, footControl[1], ikJntPos, ikHandleName, ['.ry', '.rx', '.rz'])
+        self.foot_info['footInfo'] = self.setupRGFoot(suffix, footControl[1], ikJntPos, ikHandleName, ['.rx', '.ry', '.rz'])
 
 
         # Setup the FK controls
@@ -101,6 +100,54 @@ class Create_Leg:
                 cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleY')
                 cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleZ')
 
+        # Setup FK stretch
+        stretchAxis = '.tx'
+        for i in range(len(fkControls)):
+            if i != len(fkControls)-1:
+                print fkControls[i][1]
+                pmaFKStretchName = fkControls[i][1].replace('ctrl', 'pmaNode')
+                pmaFKStretch = cmds.shadingNode("plusMinusAverage", asUtility=True, n=pmaFKStretchName)   
+                cmds.connectAttr(fkControls[i][1] + '.stretch', pmaFKStretch + '.input1D[0]')
+                cmds.connectAttr(pmaFKStretch + '.output1D', fkControls[i+1][0] + stretchAxis)
+
+
+
+
+        # Setup the foot settings control  
+        ctrlPos = cmds.xform(self.jnt_info['rigJnts'][4], q=True, ws=True, t=True)
+        ctrlAttrs = (['ik_fk'])
+        ctrlName = userDefinedName + '_settings_ctrl'
+        settingsControl = part_utils.setupControlObject("SettingsControl.ma", ctrlName, ctrlAttrs, ctrlPos, os.environ['Parts_Maya_Controls'])
+        # NOTE:  I need a temp fix to make IK_FK attr an Enum.
+
+        # Hookup ik fk switch
+        for i in range(len(self.jnt_info['bcNodes'])):
+            for node in self.jnt_info['bcNodes'][i]:
+                cmds.connectAttr(settingsControl[1] +'.ik_fk', node + '.blender' )
+
+        # Add all control objects to self.foot_info = {'controls'}
+        fkControls.append(footControl)
+        fkControls.append(settingsControl)
+        self.foot_info['controls'] = fkControls
+ 
+
+        # Add the leg rig to a container.
+        rigContainerName = ('Rig_Container_' + userDefinedName)
+        rigContainer = cmds.container(n=rigContainerName)
+        cmds.addAttr(rigContainer, shortName='Link', longName='Link', dt='string')
+
+        for each in self.jnt_info['rigJnts']:
+            try:
+                cmds.container(rigContainer, edit=True, addNode=each, inc=True, ish=True, ihb=True, iha=True)
+            except: pass
+        for each in self.foot_info['footInfo']:
+            try:
+                cmds.container(rigContainer, edit=True, addNode=each, inc=True, ish=True, ihb=True, iha=True)
+            except: pass
+        for each in self.foot_info['controls']:
+            try:
+                cmds.container(rigContainer, edit=True, addNode=each, inc=True, ish=True, ihb=True, iha=True)
+            except: pass
 
     
     def setupRGFoot(self, suffix, footControl, ikJntPos, ikHandleName, orient, *args):
@@ -108,7 +155,7 @@ class Create_Leg:
         # NOTE: I want to pass in an orient argument that will determine rotation connections for foot groups.
         
         # NOTE:  Add all created nodes to a list.
-        newFootGrps = []
+        footNodes = []
         # Create utility nodes
         conBRoll = cmds.shadingNode("condition", asUtility=True, n='conNode_ballRoll_' + suffix)
         conNBRoll = cmds.shadingNode("condition", asUtility=True, n='conNode_negBallRoll_' + suffix)
@@ -116,6 +163,9 @@ class Create_Leg:
         pmaBRoll = cmds.shadingNode("plusMinusAverage", asUtility=True, n='pmaNode_ballRoll_' + suffix)
         pmaTRoll = cmds.shadingNode("plusMinusAverage", asUtility=True, n='pmaNode_toeRoll_' + suffix)
         conHRoll = cmds.shadingNode("condition", asUtility=True, n='conNode_heelRoll_' + suffix)
+        footUtilNodes = (conBRoll, conNBRoll, conTRoll, pmaBRoll, pmaTRoll, conHRoll)
+        for each in footUtilNodes:
+            footNodes.append(each)
         
         cmds.setAttr(pmaTRoll + '.operation', 2)
         cmds.setAttr (conTRoll + '.operation', 2)
@@ -132,7 +182,9 @@ class Create_Leg:
 
         # Make Ik Handles
         ikBall = cmds.ikHandle(n= "ikh_ball_" + suffix, sj= self.jnt_info['ikJnts'][2], ee= self.jnt_info['ikJnts'][3], sol = "ikSCsolver")
+        footNodes.append(ikBall)
         ikToe = cmds.ikHandle(n= "ikh_toe_" + suffix, sj=  self.jnt_info['ikJnts'][3], ee= self.jnt_info['ikJnts'][4], sol = "ikSCsolver")
+        footNodes.append(ikToe)
         # Create the foot groups
         footGrps = ('grp_footPivot', 'grp_heel', 'grp_toe', 'grp_ball', 'grp_flap')
 
@@ -145,7 +197,7 @@ class Create_Leg:
             if grp == footGrps[2] + '_' + suffix:
                 cmds.xform(grp, t=ikJntPos[4])
         for i in range(len(footGrps)):
-            newFootGrps.append(footGrps[i])
+            footNodes.append(footGrps[i])
             cmds.select(d=True)
             if i == 0:
                 cmds.parent(footGrps[i]+ '_' + suffix, footControl)    
@@ -201,10 +253,7 @@ class Create_Leg:
         cmds.connectAttr(footControl+'.foot_twist', footGrps[0]+ '_' + suffix + orient[1])
         cmds.connectAttr(footControl+'.foot_bank', footGrps[0]+ '_' + suffix + orient[2])
 
-        # Hookup ik fk switch
-        for i in range(len(self.jnt_info['bcNodes'])):
-            for node in self.jnt_info['bcNodes'][i]:
-                cmds.connectAttr(footControl +'.ik_fk', node + '.blender' )
+        return footNodes
 
         # Hookup control vis for the switch
         # NOTE:  This import is temp

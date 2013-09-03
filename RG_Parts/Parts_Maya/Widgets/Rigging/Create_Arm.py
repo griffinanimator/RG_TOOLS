@@ -21,7 +21,6 @@ class Create_Arm:
 
     def install(self, *args):
         # Collect layout info
-        print "Install"
         sel = cmds.ls(sl=True)
   
         lytObs = part_utils.collectLayoutInfo(sel)
@@ -35,16 +34,17 @@ class Create_Arm:
         self.jnt_info['fkJnts'] = part_utils.createJoints('fkj_', lytObs)
       
         # Define names for components involved in ik setup
-        userDefinedName = sel[0].partition('PartRoot_')[0]
+        tmpVar = sel[0].partition('PartRoot_')[2]
+        userDefinedName = tmpVar.partition('_')[2]
 
         #ikHandleName = "ikHandle_%s_leg" % (side)
-        ikHandleName = userDefinedName + 'ikh'
+        ikHandleName = userDefinedName + '_ikh'
         
         #ctrlName = "ctrl_%s_leg" % (side)
-        ctrlName = userDefinedName + 'ctrl'
+        ctrlName = userDefinedName + '_ctrl'
         
         #pvName = "pv_%s_leg" % (side)
-        pvName = userDefinedName + 'pv_ctrl'
+        pvName = userDefinedName + '_pv_ctrl'
         #suffix = "%s_leg" % (side)
         suffix = userDefinedName 
 
@@ -53,7 +53,7 @@ class Create_Arm:
         self.jnt_info['bcNodes'] = constraints
 
         # Define foot attribute names
-        ctrlAttrs = ('twist', 'stretch', 'stretch_bend', 'twist_offset', 'ik_fk')
+        ctrlAttrs = ('twist', 'stretch', 'stretch_bend', 'twist_offset')
         
         # NOTE: Dynamically generate the control objects
         armControl = part_utils.setupControlObject("ArmControl.ma", ctrlName, ctrlAttrs, lytObs[2][1], os.environ['Parts_Maya_Controls'])
@@ -61,9 +61,9 @@ class Create_Arm:
 
         # Create the stretchy ik chain
         ikInfo = part_utils.createStretchyIk(self.jnt_info['ikJnts'], self.jnt_info['rigJnts'], armControl, ikHandleName, pvName, suffix)
-        
-        # Parent the ik to the control
+        self.hand_info['ikNodes'] = ikInfo
 
+        # Parent the ik to the control
         cmds.parent(ikInfo[0], armControl[1])
         ikJntPos = []
         for jnt in self.jnt_info['ikJnts']:
@@ -93,8 +93,49 @@ class Create_Arm:
                 cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleX')
                 cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleY')
                 cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleZ')
+        """
+        # Setup FK stretch
+        stretchAxis = '.tx'
+        for i in range(len(fkControls)):
+            if i != len(fkControls)-1:
+                print fkControls[i][1]
+                pmaFKStretchName = fkControls[i][1].replace('ctrl', 'pmaNode')
+                pmaFKStretch = cmds.shadingNode("plusMinusAverage", asUtility=True, n=pmaFKStretchName)   
+                cmds.connectAttr(fkControls[i][1] + '.stretch', pmaFKStretch + '.input1D[0]')
+                cmds.connectAttr(pmaFKStretch + '.output1D', fkControls[i+1][0] + stretchAxis)
+        """
+
+        # Setup the arm settings control 
+        ctrlPos = cmds.xform(self.jnt_info['rigJnts'][3], q=True, ws=True, t=True)
+        ctrlAttrs = (['ik_fk'])
+        ctrlName = userDefinedName + '_settings_ctrl'
+        settingsControl = part_utils.setupControlObject("SettingsControl.ma", ctrlName, ctrlAttrs, ctrlPos, os.environ['Parts_Maya_Controls'])
+        # NOTE:  I need a temp fix to make IK_FK attr an Enum.
 
         # Hookup ik fk switch
         for i in range(len(self.jnt_info['bcNodes'])):
             for node in self.jnt_info['bcNodes'][i]:
-                cmds.connectAttr(armControl[1] +'.ik_fk', node + '.blender' )
+                cmds.connectAttr(settingsControl[1] +'.ik_fk', node + '.blender' )
+
+        # Add all control objects to self.foot_info = {'controls'}
+        fkControls.append(armControl)
+        fkControls.append(settingsControl)
+        self.hand_info['controls'] = fkControls
+       
+        # Add the arm rig to a container.
+        rigContainerName = ('Rig_Container_' + userDefinedName)
+        rigContainer = cmds.container(n=rigContainerName)
+        cmds.addAttr(rigContainer, shortName='Link', longName='Link', dt='string')
+
+        for each in self.jnt_info['rigJnts']:
+            try:
+                cmds.container(rigContainer, edit=True, addNode=each, inc=True, ish=True, ihb=True, iha=True)
+            except: pass
+        for each in self.hand_info['ikNodes']:
+            try:
+                cmds.container(rigContainer, edit=True, addNode=each, inc=True, ish=True, ihb=True, iha=True)
+            except: pass
+        for each in self.hand_info['controls']:
+            try:
+                cmds.container(rigContainer, edit=True, addNode=each, inc=True, ish=True, ihb=True, iha=True)
+            except: pass

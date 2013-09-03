@@ -242,6 +242,8 @@ def calculateAngleBetweenNormalisedVectors(VectA, VectB, *args):
     return degrees(radians)
 
 def setupControlObject(control, ctrlName, ctrlAttrs, ctrlPos, ctrlPath, *args):
+    # NOTE:  I need a better way to handle this
+    # Allow for types such as (Vector, Integer, String, Float, Boolean, Enum)
     # Delete the control if it exists
     if cmds.objExists('grp_%s' % (ctrlName)) == True:
         cmds.delete('grp_%s' % (ctrlName))
