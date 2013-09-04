@@ -254,6 +254,7 @@ def setupControlObject(control, ctrlName, ctrlAttrs, ctrlPos, ctrlPath, *args):
     cmds.rename('grp_control', ctrlGrp)
     cmds.rename('control', ctrlName)
     # Move the control to the  position
+    print ctrlPos
     cmds.xform('grp_%s' % (ctrlName), t=ctrlPos, ws=True)
     # Add the control attributes
     if len(ctrlAttrs)!= 0:

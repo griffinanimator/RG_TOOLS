@@ -71,6 +71,7 @@ class PartParam_UI:
             self.UIElements[i + "_item"] = cmds.menuItem(label=i)
 
         self.UIElements["untext_field"] = cmds.textField(tx="User_Defined_Name", width=buttonWidth+40, height=22, bgc=[1.0, 1.0, 1.0],p=self.UIElements["guiFlowLayout3"])
+        #self.UIElements["num_field"] = cmds.textField(tx="User_Defined_Name", width=buttonWidth+40, height=22, bgc=[1.0, 1.0, 1.0],p=self.UIElements["guiFlowLayout3"])
 
         cmds.separator( width=20, style='in', p=self.UIElements["guiFlowLayout1"] )
         

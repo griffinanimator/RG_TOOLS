@@ -96,11 +96,12 @@ class Create_Leg:
             if i !=0:
                 cmds.parent(fkControls[i][0], fkControls[i-1][1])
                 cmds.setAttr(fkControls[i][1]+'.size', 1)
-                cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleX')
-                cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleY')
-                cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleZ')
+                #cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleX')
+                #cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleY')
+                #cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleZ')
 
         # Setup FK stretch
+        """
         stretchAxis = '.tx'
         for i in range(len(fkControls)):
             if i != len(fkControls)-1:
@@ -109,6 +110,7 @@ class Create_Leg:
                 pmaFKStretch = cmds.shadingNode("plusMinusAverage", asUtility=True, n=pmaFKStretchName)   
                 cmds.connectAttr(fkControls[i][1] + '.stretch', pmaFKStretch + '.input1D[0]')
                 cmds.connectAttr(pmaFKStretch + '.output1D', fkControls[i+1][0] + stretchAxis)
+        """
 
 
 

@@ -6,10 +6,8 @@ import Utils.Utils_Part as part_utils
 reload(part_utils)
 
 CLASS_NAME = "Create_ASpine"
-
 TITLE = "Awesome Spine"
 DESCRIPTION = "Create an awesome spine"
-
 
 
 class Create_ASpine:
@@ -17,6 +15,8 @@ class Create_ASpine:
         # Dictionary to store info about the layout object
         self.lyt_info = {}
         self.jnt_info = {}
+        self.tmpRigElements = []
+        self.rig_info = {}
 
 
     def install(self, *args):
@@ -35,6 +35,14 @@ class Create_ASpine:
         self.jnt_info['iksJnts'] = part_utils.createJoints('ikSj_', lytObs)
         self.jnt_info['ikrJnts'] = part_utils.createJoints('ikRj_', lytObs)
 
+        # Add all of the joints to rig_info{}
+        for each in self.jnt_info['rigJnts']:
+            self.tmpRigElements.append(each)
+        for each in self.jnt_info['iksJnts']:
+            self.tmpRigElements.append(each)
+        for each in self.jnt_info['ikrJnts']:
+            self.tmpRigElements.append(each)
+
         spl = len(self.jnt_info['iksJnts']) -1
 
         # Create a new joint at the root, the mid, and the top of the iksJoint chain.
@@ -45,7 +53,9 @@ class Create_ASpine:
             cmds.select(d=True)
             rootJoints.append(cmds.joint(n=i[0], p=i[1]))
             cmds.select(d=True)
+            self.tmpRigElements.append(i)
         self.jnt_info['rootJnts'] = rootJoints
+
         
         # Define names for components involved in ik setup
         ikHandleName = userDefinedName + '_ikh'
@@ -53,13 +63,18 @@ class Create_ASpine:
 
         # Draw a splineIK from the root to the last iksJnt.
         ikSol = cmds.ikHandle(n=userDefinedName + '_spine_Ik', solver='ikSplineSolver', sj=self.jnt_info['iksJnts'][0], ee=self.jnt_info['iksJnts'][spl], ccv=True)
+        self.tmpRigElements.append(ikSol)
         cmds.select(d=True)
+        
         # Bind the splineIK curve to those 2 new joints.
         cmds.select('curve1', rootJoints)
-        cmds.skinCluster(tsb=True)
+        sc = cmds.skinCluster(n=userDefinedName + 'skinCluster', tsb=True)
+        self.tmpRigElements.append(sc)
+        
         #Rename the curve
         cmds.setAttr('curve1.inheritsTransform', 0)
         cmds.rename('curve1', userDefinedName+'_aSpine_curve')
+        self.tmpRigElements.append(userDefinedName+'_aSpine_curve')
 
         # Draw an iKhandle between each self.jnt_info['ikrJnts']
         ikHandles = []
@@ -68,16 +83,21 @@ class Create_ASpine:
                 ikh = cmds.ikHandle( n='ikH_'+ self.jnt_info['ikrJnts'][j], sol='ikRPsolver', sj=self.jnt_info['ikrJnts'][j], ee=self.jnt_info['ikrJnts'][j+1] )
                 cmds.parent(ikh, self.jnt_info['iksJnts'][j]) 
                 ikHandles.append(ikh)
+                self.tmpRigElements.append(ikh)
 
         # Point constrain 1st iks to 1st ikb
         for j in range(spl+1):
-            cmds.pointConstraint(self.jnt_info['iksJnts'][j], self.jnt_info['ikrJnts'][j], mo=True)
+            pca = cmds.pointConstraint(self.jnt_info['iksJnts'][j], self.jnt_info['ikrJnts'][j], mo=True)
+            self.tmpRigElements.append(pca)
         for j in range(1,4):    
-            cmds.pointConstraint(self.jnt_info['ikrJnts'][j], self.jnt_info['rigJnts'][j], mo=True)
-            cmds.orientConstraint(self.jnt_info['iksJnts'][j], self.jnt_info['rigJnts'][j], mo=True)
-        cmds.pointConstraint(self.jnt_info['ikrJnts'][0], self.jnt_info['rigJnts'][0], mo=True)
-        cmds.pointConstraint(self.jnt_info['ikrJnts'][4], self.jnt_info['rigJnts'][4], mo=True)
-
+            pcb = cmds.pointConstraint(self.jnt_info['ikrJnts'][j], self.jnt_info['rigJnts'][j], mo=True)
+            self.tmpRigElements.append(pcb)
+            oca = cmds.orientConstraint(self.jnt_info['iksJnts'][j], self.jnt_info['rigJnts'][j], mo=True)
+            self.tmpRigElements.append(oca)
+        pcc = cmds.pointConstraint(self.jnt_info['ikrJnts'][0], self.jnt_info['rigJnts'][0], mo=True)
+        self.tmpRigElements.append(pcc)
+        pcd = cmds.pointConstraint(self.jnt_info['ikrJnts'][4], self.jnt_info['rigJnts'][4], mo=True)
+        self.tmpRigElements.append(pcd)
 
         # Create a locator for each ikh
         locator_groups = []
@@ -85,8 +105,10 @@ class Create_ASpine:
             bPos = cmds.xform(self.jnt_info['iksJnts'][i], q=True, ws=True, t=True)
             nPos = [bPos[0], bPos[1], bPos[2]+1.0]
             lctr = cmds.spaceLocator(name='lctr_'+self.jnt_info['iksJnts'][i], a=True)
+            self.tmpRigElements.append(lctr)
             cmds.xform(lctr, ws=True, t=nPos)
             grp = cmds.group(name='grp_lctr_'+self.jnt_info['iksJnts'][i], em=True)
+            self.tmpRigElements.append(grp)
             cmds.xform(grp, ws=True, t=bPos)
             cmds.parent(lctr, grp)
             # Create pole vector constraints
@@ -107,6 +129,7 @@ class Create_ASpine:
             else:
                 pmaNode_Name = self.jnt_info['iksJnts'][i].replace('ikSj', 'pmaTwist_') 
                 pma = cmds.shadingNode("plusMinusAverage", asUtility=True, n=pmaNode_Name)
+                self.tmpRigElements.append(pma)
                 cmds.setAttr(pma+'.operation', 3) #average
                 pma_nodes.append(pma)
 
@@ -136,9 +159,10 @@ class Create_ASpine:
         # NOTE: Add stretch ammount attribute.
         #cmds.expression( s= 'surface1.sx = %s.arcLength' %  curveInfoNode )
         curveInfoNode = cmds.arclen(userDefinedName+'_aSpine_curve', ch=True)
+        
         mdsNode_Name = self.jnt_info['iksJnts'][0].replace('ikSj', 'mdStretch') 
-
         mds = cmds.shadingNode("multiplyDivide", asUtility=True, n=mdsNode_Name)
+        self.tmpRigElements.append(mds)
   
         cmds.setAttr(mds+'.operation', 2) #divide
         cmds.connectAttr(curveInfoNode+'.arcLength', mds+'.input1X')
@@ -197,3 +221,19 @@ class Create_ASpine:
         cmds.parent(spineCtrls[4][0], spineCtrls[2][1])
         cmds.parent(spineCtrls[3][0], spineCtrls[2][1])
         cmds.parent(spineCtrls[2][0], spineCtrls[1][1])
+
+        # Cleanup
+        for each in spineCtrls:
+            self.tmpRigElements.append(each)
+
+        self.rig_info['rig_info'] = self.tmpRigElements
+
+        # Add the leg rig to a container.
+        rigContainerName = ('Rig_Container_' + userDefinedName)
+        rigContainer = cmds.container(n=rigContainerName)
+        cmds.addAttr(rigContainer, shortName='Link', longName='Link', dt='string')
+
+        for element in self.rig_info['rig_info']:
+            try:
+                cmds.container(rigContainer, edit=True, addNode=element, inc=True, ish=True, ihb=True, iha=True)
+            except: pass
