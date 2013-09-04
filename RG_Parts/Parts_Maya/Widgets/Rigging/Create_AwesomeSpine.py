@@ -58,6 +58,7 @@ class Create_ASpine:
         cmds.select('curve1', rootJoints)
         cmds.skinCluster(tsb=True)
         #Rename the curve
+        cmds.setAttr('curve1.inheritsTransform', 0)
         cmds.rename('curve1', userDefinedName+'_aSpine_curve')
 
         # Draw an iKhandle between each self.jnt_info['ikrJnts']
@@ -71,7 +72,12 @@ class Create_ASpine:
         # Point constrain 1st iks to 1st ikb
         for j in range(spl+1):
             cmds.pointConstraint(self.jnt_info['iksJnts'][j], self.jnt_info['ikrJnts'][j], mo=True)
+        for j in range(1,4):    
             cmds.pointConstraint(self.jnt_info['ikrJnts'][j], self.jnt_info['rigJnts'][j], mo=True)
+            cmds.orientConstraint(self.jnt_info['iksJnts'][j], self.jnt_info['rigJnts'][j], mo=True)
+        cmds.pointConstraint(self.jnt_info['ikrJnts'][0], self.jnt_info['rigJnts'][0], mo=True)
+        cmds.pointConstraint(self.jnt_info['ikrJnts'][4], self.jnt_info['rigJnts'][4], mo=True)
+
 
         # Create a locator for each ikh
         locator_groups = []
@@ -150,14 +156,44 @@ class Create_ASpine:
         # Setup controls
         suffix = userDefinedName 
         ctrlAttrs = []
+
+        spineCtrls = []
+        """
+        spineCtrls contents
+        [u'grp_Spine__c0_ctrl_hip', u'Spine__c0_ctrl_hip'] 0
+        [u'grp_Spine__c0_ctrl_0', u'Spine__c0_ctrl_0'] 1
+        [u'grp_Spine__c0_ctrl_1', u'Spine__c0_ctrl_1'] 2
+        [u'grp_Spine__c0_ctrl_2', u'Spine__c0_ctrl_2'] 3
+        [u'grp_Spine__c0_ik_ctrl_1', u'Spine__c0_ik_ctrl_1'] 4
+        """
+
+        # Create the hip control
+        ctrlName = userDefinedName + '_ctrl_hip'
+        ctrlPos = cmds.xform(self.jnt_info['rootJnts'][0], q=True, ws=True, t=True)
+        spineControl = part_utils.setupControlObject("HipControl.ma", ctrlName, ctrlAttrs, ctrlPos, os.environ['Parts_Maya_Controls'])
+        cmds.parentConstraint(spineControl[1], self.jnt_info['rootJnts'][0])
+        spineCtrls.append(spineControl)
+
         
         for i in range(len(self.jnt_info['rootJnts'])):
             ctrlName = userDefinedName + '_ctrl_' + str(i)
-            print ctrlName
             ctrlPos = cmds.xform(self.jnt_info['rootJnts'][i], q=True, ws=True, t=True)
             # NOTE: Dynamically generate the control objects
-            spineControl = part_utils.setupControlObject("SpineControl.ma", ctrlName, ctrlAttrs, ctrlPos, os.environ['Parts_Maya_Controls'])
-            cmds.parentConstraint(spineControl, self.jnt_info['rootJnts'][i])
+            spineControl = part_utils.setupControlObject("FkSpineControl.ma", ctrlName, ctrlAttrs, ctrlPos, os.environ['Parts_Maya_Controls'])
+            if i == 2:
+                cmds.parentConstraint(spineControl, self.jnt_info['rootJnts'][i], mo=True)
+            spineCtrls.append(spineControl)
+
+        # Create the mid spine control
+        ctrlName = userDefinedName + '_ik_ctrl_' + str(1)
+        ctrlPos = cmds.xform(self.jnt_info['rootJnts'][1], q=True, ws=True, t=True)
+        spineControl = part_utils.setupControlObject("spineControl.ma", ctrlName, ctrlAttrs, ctrlPos, os.environ['Parts_Maya_Controls'])
+        cmds.parentConstraint(spineControl, self.jnt_info['rootJnts'][1], mo=True)
+        spineCtrls.append(spineControl)
+
+        cmds.orientConstraint(self.jnt_info['rootJnts'][0], self.jnt_info['rigJnts'][0] , mo=True)
+        cmds.orientConstraint(self.jnt_info['rootJnts'][2], self.jnt_info['rigJnts'][4] , mo=True)     
         
-   
- 
+        cmds.parent(spineCtrls[4][0], spineCtrls[2][1])
+        cmds.parent(spineCtrls[3][0], spineCtrls[2][1])
+        cmds.parent(spineCtrls[2][0], spineCtrls[1][1])
