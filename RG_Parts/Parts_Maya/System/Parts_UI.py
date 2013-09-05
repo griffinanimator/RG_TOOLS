@@ -17,7 +17,7 @@ class Parts_UI:
             cmds.deleteUI(self.windowName)
         """ Define UI elements width and height """    
         self.windowWidth = 240
-        self.windowHeight = 200
+        self.windowHeight = 220
         buttonWidth = 100
         buttonHeight = 30
 

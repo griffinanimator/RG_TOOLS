@@ -54,14 +54,12 @@ class Create_Head:
         pconA = cmds.parentConstraint(neckControl[1], self.jnt_info['rigJnts'][0], mo=True)
         pconB = cmds.parentConstraint(headControl[1], self.jnt_info['rigJnts'][1], mo=True)
 
-        cmds.parent(headControl[0], neckControl[1])
+        pconC = cmds.parentConstraint(neckControl[1], headControl[0], mo=True)
+        print pconC
 
-
-
-
-
-
-
+        # Setup the neck follow
+        cmds.connectAttr(headControl[1] + '.follow', pconC[0] + '.' + neckControl[1]+'W0')
+        #grp_Head__c0_head_ctrl_parentConstraint1.Head__c0_neck_ctrlW0" 0;
 
 
         # Add the head rig to a container.

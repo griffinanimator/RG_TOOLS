@@ -45,7 +45,7 @@ class PartParam_UI:
         if cmds.window(self.windowName, exists=True):
             cmds.deleteUI(self.windowName)
         """ Define UI elements width and height """    
-        self.windowWidth = 240
+        self.windowWidth = 280
         self.windowHeight = 300
         self.rowHeight = 40
         buttonWidth = 80
@@ -57,7 +57,7 @@ class PartParam_UI:
         self.UIElements["guiFlowLayout1"] = cmds.flowLayout(v=False, width=self.windowWidth, height=self.windowHeight, bgc=[0.2, 0.2, 0.2])
         cmds.separator( width=20, style='in', p=self.UIElements["guiFlowLayout1"] )
         
-        """ Button Row """
+        """ Button Row 1"""
         self.UIElements["guiFlowLayout3"] = cmds.flowLayout(v=False, width=self.windowWidth/2, height=self.windowHeight, bgc=[0.4, 0.4, 0.4], cs=10, wr=True)
         cmds.setParent(self.UIElements["guiFlowLayout1"])
 
@@ -71,8 +71,13 @@ class PartParam_UI:
             self.UIElements[i + "_item"] = cmds.menuItem(label=i)
 
         self.UIElements["untext_field"] = cmds.textField(tx="User_Defined_Name", width=buttonWidth+40, height=22, bgc=[1.0, 1.0, 1.0],p=self.UIElements["guiFlowLayout3"])
-        #self.UIElements["num_field"] = cmds.textField(tx="User_Defined_Name", width=buttonWidth+40, height=22, bgc=[1.0, 1.0, 1.0],p=self.UIElements["guiFlowLayout3"])
-
+        
+        self.UIElements["parenttext_field"] = cmds.textField(tx="Parent Part", width=buttonWidth+40, height=22, bgc=[1.0, 1.0, 1.0],p=self.UIElements["guiFlowLayout3"])
+       
+        #self.UIElements["parenttext_field"] = cmds.textFieldButtonGrp( label='Parent', pht='Parent Part', buttonLabel='<', adj=2, cw=[3, 20], w=110, p=self.UIElements["guiFlowLayout3"] )
+        self.UIElements["parent_button"] = cmds.button(label='< Parent', width=buttonWidth+40, height=buttonHeight, bgc=[1.0, 1.0, 1.0], p=self.UIElements["guiFlowLayout3"], command=self.chooseParentLink) 
+        self.UIElements["child_button"] = cmds.button(label='< Child', width=buttonWidth+40, height=buttonHeight, bgc=[1.0, 1.0, 1.0], p=self.UIElements["guiFlowLayout3"], command=self.chooseChildLink) 
+        #self.UIElements["childtext_field"] = cmds.textFieldButtonGrp( label='Child', pht='Child Part', buttonLabel='<', adj=2, cw=[3, 20], w=110, p=self.UIElements["guiFlowLayout3"] )
         cmds.separator( width=20, style='in', p=self.UIElements["guiFlowLayout1"] )
         
         """ Button Row 2 """      
@@ -174,6 +179,8 @@ class PartParam_UI:
 
         containerName = ('Part_Container_' + num + '_' + userDefinedName)
         con1 = cmds.container(n=containerName)
+        cmds.addAttr(con1, shortName='ParentLink', longName='ParentLink', dt='string')
+        cmds.addAttr(con1, shortName='ChildLink', longName='ChildLink', dt='string')
         for i in contained_nodes:
             cmds.container(containerName, edit=True, addNode=i, inc=True, ish=True, ihb=True, iha=True)
 
@@ -271,3 +278,19 @@ class PartParam_UI:
         for i in mirror_contained_nodes:
             cmds.container(containerName, edit=True, addNode=i, inc=True, ish=True, ihb=True, iha=True)
         cmds.container('Master_Widget_Container', edit=True, addNode=containerName, inc=True, ish=True, ihb=True, iha=True)
+
+    def chooseParentLink(self, *args):
+        print 'p'
+        sel = cmds.ls(sl=True, type='transform')
+        cmds.button(self.UIElements["parent_button"], edit=True, l=sel[0])
+    def chooseChildLink(self, *args):
+        print 'c'
+        sel = cmds.ls(sl=True, type='transform')
+        print sel
+        cmds.button(self.UIElements["child_button"], edit=True, l=sel[0])
+    def makePartLink(self, *args):
+        self.findPartContainer()
+
+    def findPartContainer(self, *args):
+        print 'fc'
+        print cmds.ls(et='RG_Part')

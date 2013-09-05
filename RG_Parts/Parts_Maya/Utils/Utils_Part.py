@@ -251,11 +251,11 @@ def setupControlObject(control, ctrlName, ctrlAttrs, ctrlPos, ctrlPath, *args):
     cmds.file(ctrlPath + control, i=True)
     # rename the control
     ctrlGrp = 'grp_%s' % (ctrlName)
-    cmds.rename('grp_control', ctrlGrp)
     cmds.rename('control', ctrlName)
-    # Move the control to the  position
-    print ctrlPos
-    cmds.xform('grp_%s' % (ctrlName), t=ctrlPos, ws=True)
+    if cmds.objExists('grp_control'):
+        cmds.rename('grp_control', ctrlGrp)
+        # Move the control to the  position
+        cmds.xform('grp_%s' % (ctrlName), t=ctrlPos, ws=True)
     # Add the control attributes
     if len(ctrlAttrs)!= 0:
         cmds.select(ctrlName)
