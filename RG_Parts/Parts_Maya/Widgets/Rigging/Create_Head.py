@@ -73,3 +73,5 @@ class Create_Head:
             try:
                 cmds.container(rigContainer, edit=True, addNode=element, inc=True, ish=True, ihb=True, iha=True)
             except: pass
+
+        # Head lookat
