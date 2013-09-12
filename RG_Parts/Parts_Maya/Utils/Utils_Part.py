@@ -317,12 +317,12 @@ def createStretchyIk(ikjnt_info, rjnt_info, control, ikHandleName, pvName, suffi
     lctrR = cmds.spaceLocator(n='lctrDis_Root_' + suffix, p=rootPos)
     lctrE = cmds.spaceLocator(n='lctrDis_End_' + suffix, p=endPos)
     disDim = cmds.distanceDimension(sp=(rootPos), ep=(endPos))
-    cmds.rename('distanceDimensionShape1', 'disDimNode_Stretch_' + suffix + 'Shape')
+    cmds.rename('distanceDimensionShape1', 'disDimNode_Stretch_' + suffix + '_Shape')
     cmds.rename('distanceDimension1', 'disDimNode_Stretch_' + suffix)
     
 
-    cmds.connectAttr(lctrR[0] + 'Shape.worldPosition[0]', 'disDimNode_Stretch_' + suffix + 'Shape' + '.startPoint', f=True)
-    cmds.connectAttr(lctrE[0] + 'Shape.worldPosition[0]', 'disDimNode_Stretch_' + suffix + 'Shape' + '.endPoint',f=True)
+    cmds.connectAttr(lctrR[0] + 'Shape.worldPosition[0]', 'disDimNode_Stretch_' + suffix + '_Shape' + '.startPoint', f=True)
+    cmds.connectAttr(lctrE[0] + 'Shape.worldPosition[0]', 'disDimNode_Stretch_' + suffix + '_Shape' + '.endPoint',f=True)
 
 
     # TODO: Need to save these for later
@@ -406,7 +406,7 @@ def createStretchyIk(ikjnt_info, rjnt_info, control, ikHandleName, pvName, suffi
     cmds.connectAttr(control[1]+'.twist_offset', pmaTwist+'.input1D[2]')
     cmds.connectAttr(pmaTwist+'.output1D', ikHandleName+'.twist')
 
-    return(ikh)
+    return(ikh[0], lctrR[0], 'disDimNode_Stretch_' + suffix, pvName)
 
 def connectJointChains(parents, children):
     constraints = []
@@ -454,3 +454,12 @@ def findHighestTrailingNumber(names, basename):
                     highestValue = numericalElement +1
             
     return highestValue
+
+
+def findPartContainer(self, node, *args):
+    if node == None:
+        return
+    print node
+    partNodes = cmds.ls(et='RG_Part')
+    shapeNode = cmds.listRelatives(node, c=True, s=True)[0]   
+    return cmds.container(q=True, fc=shapeNode)

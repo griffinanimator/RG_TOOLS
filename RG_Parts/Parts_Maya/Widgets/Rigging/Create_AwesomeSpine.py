@@ -21,8 +21,24 @@ class Create_ASpine:
 
     def install(self, *args):
         # Collect layout info
-        print "Install"
         sel = cmds.ls(sl=True)
+        # Find the part root in case we have dont have it selected.
+        # NOTE:  Keep an eye on this.
+        nodes = cmds.listRelatives(sel, ad=True, ap=True, type='transform')
+        relativeNodes = []
+
+        if sel[0].startswith('PartRoot_'):
+            relativeNodes.append(sel[0])
+
+        for each in nodes:
+            print each
+            print sel[0]
+            if each.startswith('PartRoot_'):
+                relativeNodes.append(each)
+            if each.startswith('PartRoot_Grp'):
+                relativeNodes.remove(each)
+                
+        sel = relativeNodes
 
         tmpVar = sel[0].partition('PartRoot_')[2]
         userDefinedName = tmpVar.partition('_')[2]
@@ -232,6 +248,23 @@ class Create_ASpine:
         rigContainerName = ('Rig_Container_' + userDefinedName)
         rigContainer = cmds.container(n=rigContainerName)
         cmds.addAttr(rigContainer, shortName='Link', longName='Link', dt='string')
+
+        # Group the arm under a master transform
+        partLinkGrpName = ('Part_Link_' + userDefinedName)
+        plGrp = cmds.group(n=partLinkGrpName, em=True)
+        plGrpPos = cmds.xform(self.jnt_info['rigJnts'][0], q=True, ws=True, t=True)
+        cmds.xform(plGrp, ws=True, t=plGrpPos)
+        cmds.makeIdentity( plGrp, apply=True )
+        
+        cmds.parent(self.jnt_info['rigJnts'][0], plGrp)
+        cmds.parent(self.jnt_info['iksJnts'][0], plGrp)
+        cmds.parent(self.jnt_info['ikrJnts'][0], plGrp)
+        
+        #cmds.parent(armControl[0], plGrp)
+      
+
+        cmds.container(rigContainer, edit=True, addNode=plGrp, inc=True, ish=True, ihb=True, iha=True)
+
 
         for element in self.rig_info['rig_info']:
             try:

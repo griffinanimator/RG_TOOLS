@@ -1,11 +1,15 @@
 import maya.cmds as cmds
 import os
+import json
+import tempfile
 from functools import partial
 import Utils.Utils_File as fileUtils
 #NOTE: Remove this import!
 import Utils.Utils_Part as Utils_Part
 reload(Utils_Part)
 import Utils.Utils as Utils
+import Utils.Utils_JSON as Utils_Json
+
 class PartParam_UI:
           
     def __init__(self, *args):
@@ -77,7 +81,8 @@ class PartParam_UI:
         self.UIElements["child_button"] = cmds.button(label='< Child', width=buttonWidth+40, height=buttonHeight, bgc=[1.0, 1.0, 1.0], p=self.UIElements["guiFlowLayout3"], command=self.chooseChildLink)
         self.UIElements["link_button"] = cmds.button(label='Make Link', width=buttonWidth+40, height=buttonHeight, bgc=[1.0, 1.0, 1.0], p=self.UIElements["guiFlowLayout3"], command=self.makePartLink)
 
-        self.UIElements["savelyt_button"] = cmds.button(label='Save_Layout', width=buttonWidth+40, height=buttonHeight, bgc=[1.0, 1.0, 1.0], p=self.UIElements["guiFlowLayout3"], command=self.saveCharacterLayout)    
+        self.UIElements["savelyt_button"] = cmds.button(label='Save_Layout', width=buttonWidth+40, height=buttonHeight, bgc=[1.0, 1.0, 1.0], p=self.UIElements["guiFlowLayout3"], command=self.saveCharacterLayout) 
+        self.UIElements["loadlyt_button"] = cmds.button(label='Load_Layout', width=buttonWidth+40, height=buttonHeight, bgc=[1.0, 1.0, 1.0], p=self.UIElements["guiFlowLayout3"], command=self.loadCharacterLayout)   
         #self.UIElements["childtext_field"] = cmds.textFieldButtonGrp( label='Child', pht='Child Part', buttonLabel='<', adj=2, cw=[3, 20], w=110, p=self.UIElements["guiFlowLayout3"] )
         cmds.separator( width=20, style='in', p=self.UIElements["guiFlowLayout1"] )
         
@@ -317,26 +322,46 @@ class PartParam_UI:
     """
 
     def saveCharacterLayout(self, *args):
+        # Temporary path for testing
+        filename = '//samba/artist/RGriffin/Assets/Flynn/CharacterData'
         widget_info = {}
-               
-        containers = cmds.ls(et='container')
+
+        containers = cmds.ls(et='container')  
 
         for c in containers:
-            tmpWI_list = []
-            transforms = cmds.container(c, q=True, nl=True)
-            for each in transforms:
-                print each
-                print type(each)
-                if type(each) == 'transform':
-                    print each
+            tmpWI_list = {}
+
+            containedNodes = cmds.container(c, q=True, nl=True)
+            # If the container is not the Master Container, get parent and child attrs
+            if c != 'Master_Widget_Container':            
+                plAttr = cmds.getAttr(c + '.ParentLink')
+                clAttr = cmds.getAttr(c + '.ChildLink')
+
+                # Find the userDefinedName
+                # NOTE:  This should be a function
+                tn = c.partition('Part_Container_')[2]
+                partName = tn.partition('_')[2]
+
+                tmpWI_list['plAttr'] = plAttr
+                tmpWI_list['clAttr'] = clAttr
+                tmpWI_list['part'] = c
+                tmpWI_list['nodes'] = containedNodes
+
+        widget_info[partName] = tmpWI_list
+
+        Utils_Json.writeJson(filename, widget_info)
+
+
+    def loadCharacterLayout(self, *args):
+        filename = '//samba/artist/RGriffin/Assets/Flynn/CharacterData'
+
+        data = Utils_Json.readJson(filename)
+        print json.loads( data )
+        lctrInfo = json.loads( data )
+
+
+        for key, value in lctrInfo.iteritems() :
+            print key, value
 
 
 
-
-
-
-
-
-
-
-        

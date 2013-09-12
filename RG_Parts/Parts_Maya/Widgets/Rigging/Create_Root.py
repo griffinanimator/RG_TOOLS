@@ -21,8 +21,24 @@ class Create_Root:
 
     def install(self, *args):
         # Collect layout info
-        print "Install"
         sel = cmds.ls(sl=True)
+        # Find the part root in case we have dont have it selected.
+        # NOTE:  Keep an eye on this.
+        nodes = cmds.listRelatives(sel, ad=True, ap=True, type='transform')
+        relativeNodes = []
+
+        if sel[0].startswith('PartRoot_'):
+            relativeNodes.append(sel[0])
+
+        for each in nodes:
+            print each
+            print sel[0]
+            if each.startswith('PartRoot_'):
+                relativeNodes.append(each)
+            if each.startswith('PartRoot_Grp'):
+                relativeNodes.remove(each)
+                
+        sel = relativeNodes
 
         tmpVar = sel[0].partition('PartRoot_')[2]
         userDefinedName = tmpVar.partition('_')[2]

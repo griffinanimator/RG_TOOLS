@@ -22,6 +22,21 @@ class Create_Arm:
     def install(self, *args):
         # Collect layout info
         sel = cmds.ls(sl=True)
+        # Find the part root in case we have dont have it selected.
+        # NOTE:  Keep an eye on this.
+        nodes = cmds.listRelatives(sel, ad=True, ap=True, type='transform')
+        relativeNodes = []
+
+        if sel[0].startswith('PartRoot_'):
+            relativeNodes.append(sel[0])
+
+        for each in nodes:
+            if each.startswith('PartRoot_'):
+                relativeNodes.append(each)
+            if each.startswith('PartRoot_Grp'):
+                relativeNodes.remove(each)
+                
+        sel = relativeNodes
   
         lytObs = part_utils.collectLayoutInfo(sel)
         #del lytObs[-1]
@@ -123,10 +138,29 @@ class Create_Arm:
         self.hand_info['controls'] = fkControls
        
         # Add the arm rig to a container.
+        # NOTE: This should be a function
         rigContainerName = ('Rig_Container_' + userDefinedName)
         rigContainer = cmds.container(n=rigContainerName)
         cmds.addAttr(rigContainer, shortName='Link', longName='Link', dt='string')
 
+        # Group the arm under a master transform
+        partLinkGrpName = ('Part_Link_' + userDefinedName)
+        plGrp = cmds.group(n=partLinkGrpName, em=True)
+        plGrpPos = cmds.xform(self.jnt_info['rigJnts'][0], q=True, ws=True, t=True)
+        cmds.xform(plGrp, ws=True, t=plGrpPos)
+        cmds.makeIdentity( plGrp, apply=True )
+        cmds.parent(self.jnt_info['rigJnts'][0], plGrp)
+        cmds.parent(self.jnt_info['ikJnts'][0], plGrp)
+        cmds.parent(self.jnt_info['fkJnts'][0], plGrp)
+        cmds.parent(settingsControl[0], plGrp)
+        cmds.parent(armControl[0], plGrp)
+        cmds.parent(fkControls[0][0], plGrp)
+        for each in ikInfo:
+            cmds.parent(each, plGrp)
+
+        cmds.container(rigContainer, edit=True, addNode=plGrp, inc=True, ish=True, ihb=True, iha=True)
+
+        """
         for each in self.jnt_info['rigJnts']:
             try:
                 cmds.container(rigContainer, edit=True, addNode=each, inc=True, ish=True, ihb=True, iha=True)
@@ -139,3 +173,7 @@ class Create_Arm:
             try:
                 cmds.container(rigContainer, edit=True, addNode=each, inc=True, ish=True, ihb=True, iha=True)
             except: pass
+        """
+
+
+
