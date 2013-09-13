@@ -282,6 +282,9 @@ class PartParam_UI:
 
         containerName = ('Part_Container_' + num + '_' + mirrorUserDefinedName)
         con1 = cmds.container(n=containerName)
+        cmds.addAttr(con1, shortName='ParentLink', longName='ParentLink', dt='string')
+        cmds.addAttr(con1, shortName='ChildLink', longName='ChildLink', dt='string')
+
         for i in mirror_contained_nodes:
             cmds.container(containerName, edit=True, addNode=i, inc=True, ish=True, ihb=True, iha=True)
         cmds.container('Master_Widget_Container', edit=True, addNode=containerName, inc=True, ish=True, ihb=True, iha=True)

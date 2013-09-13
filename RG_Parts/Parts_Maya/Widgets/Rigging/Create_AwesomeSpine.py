@@ -31,8 +31,6 @@ class Create_ASpine:
             relativeNodes.append(sel[0])
 
         for each in nodes:
-            print each
-            print sel[0]
             if each.startswith('PartRoot_'):
                 relativeNodes.append(each)
             if each.startswith('PartRoot_Grp'):
@@ -259,9 +257,13 @@ class Create_ASpine:
         cmds.parent(self.jnt_info['rigJnts'][0], plGrp)
         cmds.parent(self.jnt_info['iksJnts'][0], plGrp)
         cmds.parent(self.jnt_info['ikrJnts'][0], plGrp)
-        
-        #cmds.parent(armControl[0], plGrp)
-      
+        cmds.parent(ikSol[0], plGrp)
+        cmds.parent(spineCtrls[0][0], plGrp)
+        cmds.parent(spineCtrls[1][0], plGrp)
+        cmds.parent(userDefinedName+'_aSpine_curve', plGrp)
+
+        for each in rootJoints:
+            cmds.parent(each, plGrp)
 
         cmds.container(rigContainer, edit=True, addNode=plGrp, inc=True, ish=True, ihb=True, iha=True)
 

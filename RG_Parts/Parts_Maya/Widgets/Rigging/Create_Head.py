@@ -31,8 +31,6 @@ class Create_Head:
             relativeNodes.append(sel[0])
 
         for each in nodes:
-            print each
-            print sel[0]
             if each.startswith('PartRoot_'):
                 relativeNodes.append(each)
             if each.startswith('PartRoot_Grp'):
@@ -71,7 +69,6 @@ class Create_Head:
         pconB = cmds.parentConstraint(headControl[1], self.jnt_info['rigJnts'][1], mo=True)
 
         pconC = cmds.parentConstraint(neckControl[1], headControl[0], mo=True)
-        print pconC
 
         # Setup the neck follow
         cmds.connectAttr(headControl[1] + '.follow', pconC[0] + '.' + neckControl[1]+'W0')
@@ -83,11 +80,28 @@ class Create_Head:
         rigContainer = cmds.container(n=rigContainerName)
         cmds.addAttr(rigContainer, shortName='Link', longName='Link', dt='string')
 
+        # Group the arm under a master transform
+        partLinkGrpName = ('Part_Link_' + userDefinedName)
+        plGrp = cmds.group(n=partLinkGrpName, em=True)
+        plGrpPos = cmds.xform(self.jnt_info['rigJnts'][0], q=True, ws=True, t=True)
+        cmds.xform(plGrp, ws=True, t=plGrpPos)
+        cmds.makeIdentity( plGrp, apply=True )
 
+        cmds.parent(self.jnt_info['rigJnts'][0], plGrp)
+        cmds.parent(self.jnt_info['fkJnts'][0], plGrp)
+        cmds.parent(headControl[0], plGrp)
+        cmds.parent(neckControl[0], plGrp)   
+
+
+        cmds.container(rigContainer, edit=True, addNode=plGrp, inc=True, ish=True, ihb=True, iha=True)
+
+
+        """
         self.rig_info['rig_info'] = self.tmpRigElements
         for element in self.rig_info['rig_info']:
             try:
                 cmds.container(rigContainer, edit=True, addNode=element, inc=True, ish=True, ihb=True, iha=True)
             except: pass
+        """
 
         # Head lookat

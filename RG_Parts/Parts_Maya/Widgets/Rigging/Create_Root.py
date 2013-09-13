@@ -31,8 +31,6 @@ class Create_Root:
             relativeNodes.append(sel[0])
 
         for each in nodes:
-            print each
-            print sel[0]
             if each.startswith('PartRoot_'):
                 relativeNodes.append(each)
             if each.startswith('PartRoot_Grp'):
@@ -49,19 +47,17 @@ class Create_Root:
         self.jnt_info['rigJnts'] = part_utils.createJoints('rigj_', lytObs)
         for each in self.jnt_info['rigJnts']:
             self.tmpRigElements.append(each)
-        print self.jnt_info['rigJnts']
 
         # NOTE:  This works but it isn't slick
-        newName = self.jnt_info['rigJnts'][0].replace('_Root', '_ANIM')
-        cmds.rename(self.jnt_info['rigJnts'][0], newName)
-        newName = self.jnt_info['rigJnts'][1].replace('_Root', '_Motion')
-        cmds.rename(self.jnt_info['rigJnts'][1], newName)
-        newName = self.jnt_info['rigJnts'][2].replace('_Root', '_CHARACTER_ROOT')
-        cmds.rename(self.jnt_info['rigJnts'][2], newName)
+        newAnName = self.jnt_info['rigJnts'][0].replace('_Root', '_ANIM')
+        cmds.rename(self.jnt_info['rigJnts'][0], newAnName)
+        newMoName = self.jnt_info['rigJnts'][1].replace('_Root', '_Motion')
+        cmds.rename(self.jnt_info['rigJnts'][1], newMoName)
+        newCrName = self.jnt_info['rigJnts'][2].replace('_Root', '_CHARACTER_ROOT')
+        cmds.rename(self.jnt_info['rigJnts'][2], newCrName)
 
         ctrlAttrs = ('None')
         
-
         # NOTE: Dynamically generate the control objects
         animControl = part_utils.setupControlObject("AnimControl.ma", 'ANIM_', ctrlAttrs, lytObs[0][1], os.environ['Parts_Maya_Controls'])
         motionControl = part_utils.setupControlObject("MotionControl.ma", 'Motion', ctrlAttrs, lytObs[0][1], os.environ['Parts_Maya_Controls'])
@@ -76,6 +72,20 @@ class Create_Root:
         rigContainerName = ('Rig_Container_' + userDefinedName)
         rigContainer = cmds.container(n=rigContainerName)
         cmds.addAttr(rigContainer, shortName='Link', longName='Link', dt='string')
+
+        # Group the arm under a master transform
+        partLinkGrpName = ('Part_Link_' + userDefinedName)
+        plGrp = cmds.group(n=partLinkGrpName, em=True)
+        plGrpPos = cmds.xform(newAnName, q=True, ws=True, t=True)
+        cmds.xform(plGrp, ws=True, t=plGrpPos)
+        cmds.makeIdentity( plGrp, apply=True )
+
+        cmds.parent(newAnName, plGrp)
+        cmds.parent(newMoName, plGrp)
+        cmds.parent(newCrName, plGrp)
+        cmds.parent(animControl[1], plGrp)
+        cmds.parent(motionControl[0], plGrp) 
+        cmds.parent(rootControl[0], plGrp) 
 
         for element in self.rig_info['rig_info']:
             try:
