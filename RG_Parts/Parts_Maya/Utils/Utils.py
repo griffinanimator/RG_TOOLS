@@ -27,3 +27,6 @@ def tempParent(self, *args):
     sel = cmds.ls(sl=True)
     constraint = cmds.parentConstraint(sel[0], sel[1], mo=False)
     cmds.delete(constraint)
+
+
+#cmds.allNodeTypes()

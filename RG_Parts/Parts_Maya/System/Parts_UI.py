@@ -10,6 +10,12 @@ class Parts_UI:
 
         """ Create a dictionary to store UI elements """
         self.UIElements = {}
+
+        arttools = os.environ["GTOOLS"]
+        rigWtPath = arttools + "/RG_Parts/Parts_Maya/Widgets/Rigging/"
+
+        # Window height determined by number of buttons
+        uiLen = len(self.returnWidgets(rigWtPath))
         
         """ Check to see if the UI exists """
         self.windowName = "Window"
@@ -17,7 +23,8 @@ class Parts_UI:
             cmds.deleteUI(self.windowName)
         """ Define UI elements width and height """    
         self.windowWidth = 240
-        self.windowHeight = 220
+        self.windowHeight = uiLen * 40
+        print self.windowHeight
         buttonWidth = 100
         buttonHeight = 30
 
@@ -31,11 +38,6 @@ class Parts_UI:
         cmds.setParent(self.UIElements["guiFlowLayout1"])
         self.UIElements["guiFlowLayout3"] = cmds.flowLayout(v=True, width=110, height=self.windowHeight, bgc=[0.4, 0.4, 0.4])
         cmds.setParent(self.UIElements["guiFlowLayout1"])
-
-        arttools = os.environ["GTOOLS"]
-        lytWtPath = arttools + "/RG_Parts/Parts_Maya/Widgets/Layout/"
- 
-        rigWtPath = arttools + "/RG_Parts/Parts_Maya/Widgets/Rigging/"
         
         for widget in self.returnWidgets(rigWtPath):
             print widget
@@ -58,6 +60,7 @@ class Parts_UI:
         print "Install"
         mod = __import__("Widgets.Rigging."+widget, {}, {}, [widget])
         reload(mod)
+        
         
         widgetClass = getattr(mod, mod.CLASS_NAME)
         widgetInstance = widgetClass()

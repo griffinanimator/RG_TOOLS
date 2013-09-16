@@ -73,8 +73,6 @@ class PartParam_UI:
         menuItems = ('l', 'r', 'c')
         for i in menuItems:
             self.UIElements[i + "_item"] = cmds.menuItem(label=i)
-
-        self.UIElements["untext_field"] = cmds.textField(tx="User_Defined_Name", width=buttonWidth+40, height=22, bgc=[1.0, 1.0, 1.0],p=self.UIElements["guiFlowLayout3"])
        
         #self.UIElements["parenttext_field"] = cmds.textFieldButtonGrp( label='Parent', pht='Parent Part', buttonLabel='<', adj=2, cw=[3, 20], w=110, p=self.UIElements["guiFlowLayout3"] )
         self.UIElements["parent_button"] = cmds.button(label='< Parent', width=buttonWidth+40, height=buttonHeight, bgc=[1.0, 1.0, 1.0], p=self.UIElements["guiFlowLayout3"], command=self.chooseParentLink) 
@@ -82,7 +80,8 @@ class PartParam_UI:
         self.UIElements["link_button"] = cmds.button(label='Make Link', width=buttonWidth+40, height=buttonHeight, bgc=[1.0, 1.0, 1.0], p=self.UIElements["guiFlowLayout3"], command=self.makePartLink)
 
         self.UIElements["savelyt_button"] = cmds.button(label='Save_Layout', width=buttonWidth+40, height=buttonHeight, bgc=[1.0, 1.0, 1.0], p=self.UIElements["guiFlowLayout3"], command=self.saveCharacterLayout) 
-        self.UIElements["loadlyt_button"] = cmds.button(label='Load_Layout', width=buttonWidth+40, height=buttonHeight, bgc=[1.0, 1.0, 1.0], p=self.UIElements["guiFlowLayout3"], command=self.loadCharacterLayout)   
+        self.UIElements["loadlyt_button"] = cmds.button(label='Load_Layout', width=buttonWidth+40, height=buttonHeight, bgc=[1.0, 1.0, 1.0], p=self.UIElements["guiFlowLayout3"], command=self.loadCharacterLayout) 
+        self.UIElements["gameJnt_button"] = cmds.button(label='Game_Joints', width=buttonWidth+40, height=buttonHeight, bgc=[1.0, 1.0, 1.0], p=self.UIElements["guiFlowLayout3"], command=Utils_Part.createBindJoints)     
         #self.UIElements["childtext_field"] = cmds.textFieldButtonGrp( label='Child', pht='Child Part', buttonLabel='<', adj=2, cw=[3, 20], w=110, p=self.UIElements["guiFlowLayout3"] )
         cmds.separator( width=20, style='in', p=self.UIElements["guiFlowLayout1"] )
         
@@ -307,22 +306,9 @@ class PartParam_UI:
     def findPartContainer(self, node, *args):
         if node == None:
             return
-        print node
         partNodes = cmds.ls(et='RG_Part')
         shapeNode = cmds.listRelatives(node, c=True, s=True)[0]   
         return cmds.container(q=True, fc=shapeNode)
-
-    """
-    def saveCharacterLayout(self, *args):
-        widgetContainers = []
-        partNodes = cmds.ls(et='RG_PartRoot')
-        
-        for node in partNodes:
-            transformNode = cmds.listRelatives(node, p=True)[0]   
-            widgetContainers.append(self.findPartContainer(transformNode))
-
-        print widgetContainers
-    """
 
     def saveCharacterLayout(self, *args):
         # Temporary path for testing
@@ -361,7 +347,6 @@ class PartParam_UI:
         data = Utils_Json.readJson(filename)
         print json.loads( data )
         lctrInfo = json.loads( data )
-
 
         for key, value in lctrInfo.iteritems() :
             print key, value

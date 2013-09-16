@@ -47,6 +47,7 @@ class Create_Arm:
         self.jnt_info['ikJnts'] = part_utils.createJoints('ikj_', lytObs)
         # Create an fk joint chain
         self.jnt_info['fkJnts'] = part_utils.createJoints('fkj_', lytObs)
+
       
         # Define names for components involved in ik setup
         tmpVar = sel[0].partition('PartRoot_')[2]

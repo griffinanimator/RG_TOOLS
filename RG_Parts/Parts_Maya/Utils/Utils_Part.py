@@ -14,17 +14,12 @@ def createJoints(prefix, lytObs, *args):
 
     jointOrientation = 'xyz'
 
-
-
     for item in lytObs:
         """ item[0] will be the joint
             item[1] will be the position
             item[2] will be the parent        
-        """
-        
+        """     
         newJointName = prefix+item[0]
-        print prefix
-        print item[0]
 
         cmds.select(d=True)
         if cmds.objExists(newJointName) == True:
@@ -292,8 +287,6 @@ def collectLayoutInfo(sel, *args):
     return lytTmp
 
 
-
-
 def createStretchyIk(ikjnt_info, rjnt_info, control, ikHandleName, pvName, suffix, *args): 
 
     rootPos = cmds.xform(ikjnt_info[0], q=True, t=True, ws=True)
@@ -456,10 +449,103 @@ def findHighestTrailingNumber(names, basename):
     return highestValue
 
 
-def findPartContainer(self, node, *args):
+def findPartContainer(node, *args):
     if node == None:
         return
-    print node
+
     partNodes = cmds.ls(et='RG_Part')
     shapeNode = cmds.listRelatives(node, c=True, s=True)[0]   
     return cmds.container(q=True, fc=shapeNode)
+
+def createBindJoints(*args):
+    # NOTE:
+    """ Pass a name prefix, oj, and other info """
+
+    # NOTE: Simplify by editing dict values?
+
+    print 'Create Bind'
+    phInfo = collectPartHeirarchyInfo()
+
+    for p in range(len(phInfo['parts'])):
+        cmds.select(d=True)
+        """
+        print phInfo['parts'][p][0]
+        print phInfo['parts'][p][1]
+        print phInfo['links'][p]
+        """
+       
+        # NOTE:  This needs to be a generally util.  I use it a lot.
+        for i in range(len(phInfo['parts'][p][0])):
+            # Define naming prefix
+            tmpItemA = phInfo['parts'][p][0][i].partition('Part_')[2]
+            bnName = 'bn_' + tmpItemA.partition('_')[2]
+
+            jnt = cmds.joint(n=bnName, p=phInfo['parts'][p][1][i] )
+
+
+    linkInfo = []
+    for l in range(len(phInfo['links'])):
+        if phInfo['links'][l][0] != None:
+            tmpItemA = phInfo['links'][l][0].partition('Part_')[2]
+            pbnName = 'bn_' + tmpItemA.partition('_')[2]
+            tmpItemB = phInfo['links'][l][1].partition('Part_')[2]
+            cbnName = 'bn_' + tmpItemB.partition('_')[2]
+            
+            linkInfo.append([cbnName, pbnName])
+    
+    for each in linkInfo:
+        cmds.parent(each[0], each[1])
+
+
+
+
+
+def collectPartHeirarchyInfo(*args):
+    # NOTE:
+    """
+    I am thinking I should get the info from pjnts.  In this way I can
+    identify joint orientation and such for each part, then grab that
+    info for building the game joints.
+    """
+    # NOTE
+    """
+    This function will collect all of the part names, positions
+    and links.
+    That information will be returned as a dictionary.
+    """
+    # NOTE
+    """ I need a convention for ignoring end parts """
+
+    # Target the master widget container
+    masterWidgetContainer = 'Master_Widget_Container'
+    
+    containers = cmds.ls(type='container')
+    
+    PartHi_Info = {}
+    parts = []
+    linkAttrs = []
+    
+    for c in containers: 
+        if c != masterWidgetContainer:
+            plink =  cmds.getAttr(c + '.ParentLink')
+            clink =  cmds.getAttr(c + '.ChildLink')
+            linkAttrs.append([plink, clink])
+        
+            containedNodes = cmds.container(c, q=True, nl=True)
+
+            tpl = [] 
+            tplPos = []
+
+            for i in containedNodes:              
+                if i.startswith('Part_') and cmds.nodeType(i)=='RG_Part': 
+                    p = cmds.listRelatives(i, p=True, type='transform')          
+                    tpl.append(p[0])
+                    pPos = cmds.xform(p, q=True, ws=True, t=True)
+                    tplPos.append(pPos)
+
+            parts.append([tpl, tplPos])                 
+
+    PartHi_Info['parts'] = parts
+    PartHi_Info['links'] = linkAttrs
+    
+    return PartHi_Info
