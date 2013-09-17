@@ -102,7 +102,7 @@ class PartParam_UI:
 
         contained_nodes = []
         """ Collect info from the UI to build part """
-        un = cmds.textField(self.UIElements["untext_field"], q=True, text=True)
+        #un = cmds.textField(self.UIElements["untext_field"], q=True, text=True)
 
         menuItem = cmds.optionMenu(self.UIElements["wsel_menu"], q=True, v=True)
         for i in range(len(self.csv_info['partInfo'])):
@@ -111,19 +111,19 @@ class PartParam_UI:
                 selectedIndex = i
 
         side = cmds.optionMenu(self.UIElements["side_menu"], q=True, v=True)
-
+        """
         if un != 'User_Defined_Name':
             udn = un 
         else:
             udn = ''
-
+        """
         """ Check to see if this name exists """
         parts = cmds.ls(et='RG_PartRoot')
 
         # Create a number suffix
         num = str(Utils_Part.findHighestTrailingNumber(parts, 'PartRoot_Shape_'))
 
-        userDefinedName = udn + menuItem + '__' + side + num
+        userDefinedName = menuItem + '__' + side + num
 
         pos = self.csv_info['partInfo'][selectedIndex][1][0]
 
@@ -186,9 +186,9 @@ class PartParam_UI:
         con1 = cmds.container(n=containerName)
         cmds.addAttr(con1, shortName='ParentLink', longName='ParentLink', dt='string')
         cmds.addAttr(con1, shortName='ChildLink', longName='ChildLink', dt='string')
-
+        print containerName
         for i in contained_nodes:
-            cmds.container(containerName, edit=True, addNode=i, inc=True, ish=True, ihb=True, iha=True)
+            cmds.container(con1, edit=True, addNode=i, inc=True, ish=True, ihb=True, iha=True)
 
         cmds.container('Master_Widget_Container', edit=True, addNode=containerName, inc=True, ish=True, ihb=True, iha=True)
 
@@ -345,7 +345,6 @@ class PartParam_UI:
         filename = '//samba/artist/RGriffin/Assets/Flynn/CharacterData'
 
         data = Utils_Json.readJson(filename)
-        print json.loads( data )
         lctrInfo = json.loads( data )
 
         for key, value in lctrInfo.iteritems() :
