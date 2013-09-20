@@ -39,14 +39,19 @@ class Create_Arm:
         sel = relativeNodes
   
         lytObs = part_utils.collectLayoutInfo(sel)
-        #del lytObs[-1]
 
-        # Create an rig joint chain
-        self.jnt_info['rigJnts'] = part_utils.createJoints('rigj_', lytObs)
+        twist = True
+        
         # Create an ik joint chain
         self.jnt_info['ikJnts'] = part_utils.createJoints('ikj_', lytObs)
         # Create an fk joint chain
         self.jnt_info['fkJnts'] = part_utils.createJoints('fkj_', lytObs)
+        # NOTE: I need the end joint to get orientation for wrist controls but
+        # Then I can get rid of it.
+        lytObs.pop()
+        # Create an rig joint chain
+        self.jnt_info['rigJnts'] = part_utils.createJoints('rigj_', lytObs)
+        # Handle twist joint creation
 
       
         # Define names for components involved in ik setup
@@ -73,7 +78,9 @@ class Create_Arm:
         
         # NOTE: Dynamically generate the control objects
         armControl = part_utils.setupControlObject("ArmControl.ma", ctrlName, ctrlAttrs, lytObs[2][1], os.environ['Parts_Maya_Controls'])
-
+        # NOTE Setting orientation here.  Do this in setupControlObject?
+        ctrlRot = cmds.xform(self.jnt_info['ikJnts'][2], q=True, ws=True, ro=True)
+        cmds.xform(armControl[0], ws=True, ro=ctrlRot)
 
         # Create the stretchy ik chain
         ikInfo = part_utils.createStretchyIk(self.jnt_info['ikJnts'], self.jnt_info['rigJnts'], armControl, ikHandleName, pvName, suffix)
@@ -88,7 +95,7 @@ class Create_Arm:
 
 
         # Setup the FK controls
-        ctrlAttrs = ('stretch', 'size')
+        ctrlAttrs = (['stretch'])
         fkControls = []
         for i in range(len(self.jnt_info['fkJnts'])):
             ctrlName = self.jnt_info['fkJnts'][i].replace('fkj_', 'ctrl_')
@@ -101,28 +108,16 @@ class Create_Arm:
             cmds.xform(fkControl[0], ws=True, t=ctrlPos)
             cmds.xform(fkControl[0], ws=True, ro=ctrlRot)
             cmds.parentConstraint(fkControl[1], self.jnt_info['fkJnts'][i], mo=True)
-
+        
         for i in range(len(fkControls)):
             if i !=0:
                 cmds.parent(fkControls[i][0], fkControls[i-1][1])
-                cmds.setAttr(fkControls[i][1]+'.size', 1)
-                cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleX')
-                cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleY')
-                cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleZ')
-        """
+
         # Setup FK stretch
-        stretchAxis = '.tx'
-        for i in range(len(fkControls)):
-            if i != len(fkControls)-1:
-                print fkControls[i][1]
-                pmaFKStretchName = fkControls[i][1].replace('ctrl', 'pmaNode')
-                pmaFKStretch = cmds.shadingNode("plusMinusAverage", asUtility=True, n=pmaFKStretchName)   
-                cmds.connectAttr(fkControls[i][1] + '.stretch', pmaFKStretch + '.input1D[0]')
-                cmds.connectAttr(pmaFKStretch + '.output1D', fkControls[i+1][0] + stretchAxis)
-        """
+        part_utils.createStretchyFk(fkControls, '.tx')
 
         # Setup the arm settings control 
-        ctrlPos = cmds.xform(self.jnt_info['rigJnts'][3], q=True, ws=True, t=True)
+        ctrlPos = cmds.xform(self.jnt_info['rigJnts'][2], q=True, ws=True, t=True)
         ctrlAttrs = (['ik_fk'])
         ctrlName = userDefinedName + '_settings_ctrl'
         settingsControl = part_utils.setupControlObject("SettingsControl.ma", ctrlName, ctrlAttrs, ctrlPos, os.environ['Parts_Maya_Controls'])
@@ -132,6 +127,10 @@ class Create_Arm:
         for i in range(len(self.jnt_info['bcNodes'])):
             for node in self.jnt_info['bcNodes'][i]:
                 cmds.connectAttr(settingsControl[1] +'.ik_fk', node + '.blender' )
+        # NOTE: Deleting unused joints MESSY
+        cmds.delete(self.jnt_info['ikJnts'][3])
+        cmds.delete(self.jnt_info['fkJnts'][3])
+        cmds.delete(fkControls[3][0])
 
         # Add all control objects to self.foot_info = {'controls'}
         fkControls.append(armControl)
@@ -156,8 +155,9 @@ class Create_Arm:
         cmds.parent(settingsControl[0], plGrp)
         cmds.parent(armControl[0], plGrp)
         cmds.parent(fkControls[0][0], plGrp)
-        for each in ikInfo:
-            cmds.parent(each, plGrp)
+        for i in range(len(ikInfo)):
+            if i != 0:
+                cmds.parent(ikInfo[i], plGrp)
 
         cmds.container(rigContainer, edit=True, addNode=plGrp, inc=True, ish=True, ihb=True, iha=True)
 

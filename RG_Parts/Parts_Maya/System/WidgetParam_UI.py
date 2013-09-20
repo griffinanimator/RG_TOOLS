@@ -22,8 +22,7 @@ class PartParam_UI:
         path = 'Z:/RG_Parts/Parts_Maya/Widgets/Layout/Layout_Defs.csv'
         csvInfo = csvUtils.csvRead(path)
 
-
-        
+        # NOTE: Convert to JSON
         """ A bunch of crap to convert csv info to a usable state """
         tmpInfo = []
 
@@ -39,7 +38,6 @@ class PartParam_UI:
             tmpInfo.append([item[0], tmpPos])
 
         self.csv_info['partInfo'] = tmpInfo
-
 
         """ Create a dictionary to store UI elements """
         self.UIElements = {}
@@ -93,6 +91,34 @@ class PartParam_UI:
         self.UIElements["mirror_button"] = cmds.button(label='Mirror', width=buttonWidth, height=buttonHeight, bgc=[1.0, 1.0, 1.0], p=self.UIElements["guiFlowLayout4"], command=self.mirrorWidget)               
         cmds.showWindow(self.windowName)
 
+    def partChainPopup(self, scope, *args):
+        # Create a prompt dialogue window to name and number chain
+        if scope == 'a':
+            result = cmds.promptDialog(
+            title='Name Part',
+            message='Enter Name:',
+            button=['OK', 'Cancel'],
+            defaultButton='OK',
+            cancelButton='Cancel',
+            dismissString='Cancel')
+
+            if result == 'OK':
+                text = cmds.promptDialog(query=True, text=True)
+
+        if scope == 'b':
+            result = cmds.promptDialog(
+            title='# Parts',
+            style='integer',
+            message='Enter Number:',
+            button=['OK', 'Cancel'],
+            defaultButton='OK',
+            cancelButton='Cancel',
+            dismissString='Cancel')
+            if result == 'OK':
+                text = cmds.promptDialog(query=True, text=True)
+
+        return (text)
+
     def createPart(self, *args):
         # TODO: Add stuff to namespaces.
         # First check to see if a master widget container exists.  If not, create one.
@@ -101,37 +127,67 @@ class PartParam_UI:
             masterWidgetContainer = cmds.container(n=MasterWidgetContainerName)
 
         contained_nodes = []
-        """ Collect info from the UI to build part """
-        #un = cmds.textField(self.UIElements["untext_field"], q=True, text=True)
 
-        menuItem = cmds.optionMenu(self.UIElements["wsel_menu"], q=True, v=True)
-        for i in range(len(self.csv_info['partInfo'])):
-            if self.csv_info['partInfo'][i][0] == menuItem:
-                numParts = len(self.csv_info['partInfo'][i][1])
-                selectedIndex = i
-
-        side = cmds.optionMenu(self.UIElements["side_menu"], q=True, v=True)
-        """
-        if un != 'User_Defined_Name':
-            udn = un 
-        else:
-            udn = ''
-        """
         """ Check to see if this name exists """
         parts = cmds.ls(et='RG_PartRoot')
 
         # Create a number suffix
         num = str(Utils_Part.findHighestTrailingNumber(parts, 'PartRoot_Shape_'))
 
-        userDefinedName = menuItem + '__' + side + num
+        """ Collect info from the UI to build part """
+        #un = cmds.textField(self.UIElements["untext_field"], q=True, text=True)
 
-        pos = self.csv_info['partInfo'][selectedIndex][1][0]
+        menuItem = cmds.optionMenu(self.UIElements["wsel_menu"], q=True, v=True)
 
+        side = cmds.optionMenu(self.UIElements["side_menu"], q=True, v=True)
+
+        if menuItem == 'Chain':
+            pos = [0.0, 0.0, 0.0]
+            chainInfo = self.partChainPopup('a')
+            menuItem = chainInfo
+            chainInfo = self.partChainPopup('b')
+            numParts = chainInfo
+            if numParts <= 1:
+                return
+            userDefinedName = menuItem + '__' + side + num
+            chain = True
+
+        if menuItem == 'Finger':
+            chainInfo = self.partChainPopup('b')
+            numParts = chainInfo
+            if numParts <= 1:
+                return
+            for i in range(len(self.csv_info['partInfo'])):
+                if self.csv_info['partInfo'][i][0] == menuItem:
+                    #numParts = len(self.csv_info['partInfo'][i][1])
+                    selectedIndex = i
+                    userDefinedName = menuItem + '__' + side + num
+                    pos = self.csv_info['partInfo'][selectedIndex][1][0]
+                    chain = False
+        else:
+            for i in range(len(self.csv_info['partInfo'])):
+                if self.csv_info['partInfo'][i][0] == menuItem:
+                    numParts = len(self.csv_info['partInfo'][i][1])
+                    selectedIndex = i
+                    userDefinedName = menuItem + '__' + side + num
+                    pos = self.csv_info['partInfo'][selectedIndex][1][0]
+                    chain = False
+
+        numParts = int(numParts)
+        
         partRoot = Utils_Part.rigNodeRoot(numParts, userDefinedName, pos, num)
         contained_nodes.append(partRoot[0])
         contained_nodes.append(partRoot[1])
 
-        pos = self.csv_info['partInfo'][selectedIndex][1]
+
+        # Add conditions for build variable length chains.
+        if chain == False:
+            pos = self.csv_info['partInfo'][selectedIndex][1]
+        else:
+            pos = []
+            for i in range(numParts):
+                p = [0.0, 0.0 + i, 0.0]
+                pos.append(p)
 
         parts = Utils_Part.rigNode(userDefinedName, numParts, partRoot, pos, num)
 
@@ -144,7 +200,6 @@ class PartParam_UI:
                 
             if p < partsLen-1:
                 partList = (parts[p], parts[p+1]) 
-     
                 partJoint = Utils_Part.createPJoints(partList)
                 pjntList.append(partJoint[0])
                 for j in partJoint:
@@ -153,18 +208,18 @@ class PartParam_UI:
                     cmds.setAttr(j + '.overrideEnabled', 1)
                     cmds.setAttr(j + '.overrideDisplayType', 1)
 
-                """
+                
                 ikHandleName = partJoint[0].replace('pjnt', 'ikh')
                 ikInfo = Utils_Part.scStretchyIk(partList, partJoint, ikHandleName)
                 for i in ikInfo[0]:
                     contained_nodes.append(i)
-                """
+                
 
                 # Connect ikHandles, parts, and joints
                 ptca =cmds.pointConstraint(partList[0], partJoint[0], mo=True)
-                ptcb =cmds.pointConstraint(partList[1], partJoint[1], mo=True)
+                #ptcb =cmds.pointConstraint(partList[1], partJoint[1], mo=True)
 
-                #ptcb = cmds.pointConstraint(partList[1], ikInfo[0][0])
+                ptcb = cmds.pointConstraint(partList[1], ikInfo[0][0])
 
                 contained_nodes.append(ptca[0])
                 contained_nodes.append(ptcb[0])
@@ -211,12 +266,17 @@ class PartParam_UI:
         userDefinedName = tmpItemB[2]
 
         instanceName =  userDefinedName.partition('__')[2]
+        print 'IN'
+        print instanceName
 
         mirrorUserDefinedName = 'c'
         if instanceName.startswith('l') == True:
             mirrorUserDefinedName = userDefinedName.replace('__l', '__r')
         if instanceName.startswith('r') == True:
             mirrorUserDefinedName = userDefinedName.replace('__r', '__l')
+
+        print 'mudn'
+        print mirrorUserDefinedName
 
         #newPartGrpName = partParent[0].replace(userDefinedName, mirrorUserDefinedName)
         #mirrorPart = cmds.duplicate(partParent[0], n=newPartGrpName, rc=True, un=False, ic=False, po=True)
@@ -226,6 +286,8 @@ class PartParam_UI:
         pos = cmds.xform(selPart, q=True, ws=True, t=True)
 
         num = str(Utils_Part.findHighestTrailingNumber(parts, 'PartRoot_Shape_'))
+        print 'num'
+        print num
         
         partRoot = Utils_Part.rigNodeRoot(numParts, mirrorUserDefinedName, pos, num)
         mirrorPartGrp = partRoot[1]

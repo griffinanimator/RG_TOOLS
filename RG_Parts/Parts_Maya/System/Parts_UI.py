@@ -40,7 +40,6 @@ class Parts_UI:
         cmds.setParent(self.UIElements["guiFlowLayout1"])
         
         for widget in self.returnWidgets(rigWtPath):
-            print widget
             mod = __import__("Widgets.Rigging."+widget, {}, {}, [widget])
             reload(mod)
 
@@ -49,11 +48,9 @@ class Parts_UI:
             classname = mod.CLASS_NAME
 
             cmds.separator(p=self.UIElements["guiFlowLayout3"])
-            self.UIElements["module_button_"+widget] = cmds.button(label=title, width=buttonWidth, height=buttonHeight, p=self.UIElements["guiFlowLayout3"], command=partial(self.installWidget, widget))       
+            self.UIElements["module_button_"+widget] = cmds.button(label=title, width=buttonWidth, height=buttonHeight, ann=description, p=self.UIElements["guiFlowLayout3"], command=partial(self.installWidget, widget))       
 
             """ Show the window"""
-        
- 
         cmds.showWindow(self.windowName)
 
     def installWidget(self, widget, *args):

@@ -97,6 +97,7 @@ def scStretchyIk(partList, partJoints, ikHandleName, *args):
 
 
 def createPJoints(parts, *args):
+    # NOTE:  Ad variable for orientation
 
     jointList = []
     cmds.select(d=True)
@@ -121,10 +122,10 @@ def createPJoints(parts, *args):
 
 def rigNode(userDefinedName, numParts, pParent, pos, num, *args):
     Parts_List=[]
+    
     for i in range(numParts):
-        val = numParts
         p = pos[i]
-
+        
         name = 'Part_Shape_' + num + '_' + str(i) + '_' + userDefinedName 
 
         # Create a transform
@@ -134,6 +135,7 @@ def rigNode(userDefinedName, numParts, pParent, pos, num, *args):
         rNode = cmds.createNode('RG_Part', p=tform, n=name)
         
         cmds.select(d=True)
+
         cmds.xform(tform, t=p)
 
         cmds.parent(rNode, pParent[0])          
@@ -401,6 +403,20 @@ def createStretchyIk(ikjnt_info, rjnt_info, control, ikHandleName, pvName, suffi
 
     return(ikh[0], lctrR[0], 'disDimNode_Stretch_' + suffix, pvName)
 
+def createStretchyFk(fkControls, axis, *args):
+    # Setup FK stretch
+    for i in range(len(fkControls)):
+        if i != len(fkControls)-1:
+            print fkControls[i][1]
+            pmaFKStretchName = fkControls[i][1].replace('ctrl', 'pmaNode')
+            pmaFKStretch = cmds.shadingNode("plusMinusAverage", asUtility=True, n=pmaFKStretchName) 
+            offset = cmds.getAttr(fkControls[i+1][0] + axis)  
+            cmds.setAttr(pmaFKStretch + '.input1D[1]', offset)
+            cmds.connectAttr(fkControls[i][1] + '.stretch', pmaFKStretch + '.input1D[0]')
+            cmds.connectAttr(pmaFKStretch + '.output1D', fkControls[i+1][0] + axis)
+ 
+
+
 def connectJointChains(parents, children):
     constraints = []
     for j in range(len(parents)):
@@ -468,11 +484,11 @@ def createBindJoints(*args):
 
     for p in range(len(phInfo['parts'])):
         cmds.select(d=True)
-        """
+        
         print phInfo['parts'][p][0]
         print phInfo['parts'][p][1]
         print phInfo['links'][p]
-        """
+        
        
         # NOTE:  This needs to be a generally util.  I use it a lot.
         for i in range(len(phInfo['parts'][p][0])):
@@ -494,7 +510,10 @@ def createBindJoints(*args):
             linkInfo.append([cbnName, pbnName])
     
     for each in linkInfo:
-        cmds.parent(each[0], each[1])
+        try:
+            cmds.parent(each[0], each[1])
+        except: 
+            print each
 
 
 

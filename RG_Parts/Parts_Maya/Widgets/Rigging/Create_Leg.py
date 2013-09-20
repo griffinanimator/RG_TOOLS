@@ -31,8 +31,6 @@ class Create_Leg:
             relativeNodes.append(sel[0])
 
         for each in nodes:
-            print each
-            print sel[0]
             if each.startswith('PartRoot_'):
                 relativeNodes.append(each)
             if each.startswith('PartRoot_Grp'):
@@ -48,20 +46,17 @@ class Create_Leg:
     	self.jnt_info['ikJnts'] = part_utils.createJoints('ikj_', lytObs)
         # Create an fk joint chain
         self.jnt_info['fkJnts'] = part_utils.createJoints('fkj_', lytObs)
-      
+        """
         # Define names for components involved in ik setup
         tmpVar = sel[0].partition('PartRoot_')[2]
         userDefinedName = tmpVar.partition('_')[2]
 
-        #ikHandleName = "ikHandle_%s_leg" % (side)
         ikHandleName = userDefinedName + '_ikh'
         
-        #ctrlName = "ctrl_%s_leg" % (side)
         ctrlName = userDefinedName + '_ctrl'
         
-        #pvName = "pv_%s_leg" % (side)
         pvName = userDefinedName + '_pv_ctrl'
-        #suffix = "%s_leg" % (side)
+
         suffix = userDefinedName 
 
         # Connect the ik and fk joints to the rig joints
@@ -113,25 +108,10 @@ class Create_Leg:
             if i !=0:
                 cmds.parent(fkControls[i][0], fkControls[i-1][1])
                 cmds.setAttr(fkControls[i][1]+'.size', 1)
-                #cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleX')
-                #cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleY')
-                #cmds.connectAttr(fkControls[i][1]+'.size', fkControls[i][0]+'.scaleZ')
-
+        
         # Setup FK stretch
-        """
-        stretchAxis = '.tx'
-        for i in range(len(fkControls)):
-            if i != len(fkControls)-1:
-                print fkControls[i][1]
-                pmaFKStretchName = fkControls[i][1].replace('ctrl', 'pmaNode')
-                pmaFKStretch = cmds.shadingNode("plusMinusAverage", asUtility=True, n=pmaFKStretchName)   
-                cmds.connectAttr(fkControls[i][1] + '.stretch', pmaFKStretch + '.input1D[0]')
-                cmds.connectAttr(pmaFKStretch + '.output1D', fkControls[i+1][0] + stretchAxis)
-        """
-
-
-
-
+        part_utils.createStretchyFk(fkControls, '.tx')
+      
         # Setup the foot settings control  
         ctrlPos = cmds.xform(self.jnt_info['rigJnts'][4], q=True, ws=True, t=True)
         ctrlAttrs = (['ik_fk'])
@@ -171,7 +151,7 @@ class Create_Leg:
             cmds.parent(each, plGrp)
 
         cmds.container(rigContainer, edit=True, addNode=plGrp, inc=True, ish=True, ihb=True, iha=True)
-
+        """
         """
         for each in self.jnt_info['rigJnts']:
             try:
@@ -186,7 +166,7 @@ class Create_Leg:
                 cmds.container(rigContainer, edit=True, addNode=each, inc=True, ish=True, ihb=True, iha=True)
             except: pass
         """
-    
+        
     def setupRGFoot(self, suffix, footControl, ikJntPos, ikHandleName, orient, *args):
         print 'In Setup Foot'
         # NOTE: I want to pass in an orient argument that will determine rotation connections for foot groups.
