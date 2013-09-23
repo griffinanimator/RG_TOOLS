@@ -41,46 +41,93 @@ class RigNode(OpenMayaMPx.MPxLocatorNode):
 
                 glFT.glColor3f(1, 0, 0)
                 glFT.glBegin(OpenMayaRender.MGL_TRIANGLES)
-                glFT.glVertex3f(-0.1, 0.0, 0.0)
+                glFT.glVertex3f(-0.4, 0.0, 0.0)
                 glFT.glVertex3f(-0.2, 0.0, 0.2)         
                 glFT.glVertex3f(-0.2, 0.0, -0.2)        
                 glFT.glEnd()
 
                 glFT.glColor3f(1, 0, 0)
                 glFT.glBegin(OpenMayaRender.MGL_TRIANGLES)
-                glFT.glVertex3f(0.1, 0.0, 0.0)
+                glFT.glVertex3f(0.4, 0.0, 0.0)
                 glFT.glVertex3f(0.2, 0.0, 0.2)          
                 glFT.glVertex3f(0.2, 0.0, -0.2) 
                 glFT.glEnd()
+
+                glFT.glColor3f(1, 0, 0)
+                glFT.glBegin(OpenMayaRender.MGL_TRIANGLES)
+                glFT.glVertex3f(-0.4, 0.0, 0.0)
+                glFT.glVertex3f(-0.2, 0.2, 0.0)         
+                glFT.glVertex3f(-0.2, -0.2, -0.0)        
+                glFT.glEnd()
+
+                glFT.glColor3f(1, 0, 0)
+                glFT.glBegin(OpenMayaRender.MGL_TRIANGLES)
+                glFT.glVertex3f(0.4, 0.0, 0.0)
+                glFT.glVertex3f(0.2, 0.2, 0.0)         
+                glFT.glVertex3f(0.2, -0.2, -0.0)        
+                glFT.glEnd()
+
+                #cmds.createNode('RG_Part')
+
 
                 # Y Axis
                 glFT.glColor3f(0, 1, 0)
                 glFT.glBegin(OpenMayaRender.MGL_TRIANGLES)
                 glFT.glVertex3f(-0.2, 0.2, 0.0)
-                glFT.glVertex3f(0.0, 0.1, 0.0)          
+                glFT.glVertex3f(0.0, 0.4, 0.0)          
                 glFT.glVertex3f(0.2, 0.2, 0.0)          
                 glFT.glEnd()
 
                 glFT.glColor3f(0, 1, 0)
                 glFT.glBegin(OpenMayaRender.MGL_TRIANGLES)
                 glFT.glVertex3f(-0.2, -0.2, 0.0)
-                glFT.glVertex3f(0.0, -0.1, 0.0)         
+                glFT.glVertex3f(0.0, -0.4, 0.0)         
                 glFT.glVertex3f(0.2, -0.2, 0.0)         
                 glFT.glEnd()
+
+                glFT.glColor3f(0, 1, 0)
+                glFT.glBegin(OpenMayaRender.MGL_TRIANGLES)
+                glFT.glVertex3f(0.0, 0.2, -0.2)
+                glFT.glVertex3f(0.0, 0.4, 0.0)          
+                glFT.glVertex3f(0.0, 0.2, 0.2)          
+                glFT.glEnd()
+
+                glFT.glColor3f(0, 1, 0)
+                glFT.glBegin(OpenMayaRender.MGL_TRIANGLES)
+                glFT.glVertex3f(0.0, -0.2, -0.2)
+                glFT.glVertex3f(0.0, -0.4, 0.0)          
+                glFT.glVertex3f(0.0, -0.2, 0.2)          
+                glFT.glEnd()
+
+            
 
                 # Z Axis
                 glFT.glColor3f(0, 0, 1)
                 glFT.glBegin(OpenMayaRender.MGL_TRIANGLES)
                 glFT.glVertex3f(-0.2, 0.0, 0.2)
-                glFT.glVertex3f(0.0, 0.0, 0.1)          
+                glFT.glVertex3f(0.0, 0.0, 0.4)          
                 glFT.glVertex3f(0.2, 0.0, 0.2)          
                 glFT.glEnd()
 
                 glFT.glColor3f(0, 0, 1)
                 glFT.glBegin(OpenMayaRender.MGL_TRIANGLES)
                 glFT.glVertex3f(-0.2, 0.0, -0.2)
-                glFT.glVertex3f(0.0, 0.0, -0.1)         
+                glFT.glVertex3f(0.0, 0.0, -0.4)         
                 glFT.glVertex3f(0.2, 0.0, -0.2)         
+                glFT.glEnd()
+
+                glFT.glColor3f(0, 0, 1)
+                glFT.glBegin(OpenMayaRender.MGL_TRIANGLES)
+                glFT.glVertex3f(0.0, -0.2, 0.2)
+                glFT.glVertex3f(0.0, 0.0, 0.4)          
+                glFT.glVertex3f(0.0, 0.2, 0.2)          
+                glFT.glEnd()
+
+                glFT.glColor3f(0, 0, 1)
+                glFT.glBegin(OpenMayaRender.MGL_TRIANGLES)
+                glFT.glVertex3f(0.0, -0.2, -0.2)
+                glFT.glVertex3f(0.0, 0.0, -0.4)          
+                glFT.glVertex3f(0.0, 0.2, -0.2)          
                 glFT.glEnd()
 
                 view.endGL()
