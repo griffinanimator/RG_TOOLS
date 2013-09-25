@@ -2,13 +2,6 @@ import maya.cmds as cmds
 import json
 import tempfile
 
-def readJson(fileName):
-    with open(fileName, 'r') as infile:
-        data = (open(infile.name, 'r').read())
-    return data
-
-    
-
 def install(part, dm, *args):
     # NOTE:  I do a bunch of renaming that should be done by editing the dict entries
     # List to hold pcontrols
@@ -113,6 +106,10 @@ def install(part, dm, *args):
         cmds.delete(tmpConstraint) 
         tmpConstraint = cmds.parentConstraint(pjntEnd, ectrlGrp, mo=False)
         cmds.delete(tmpConstraint)
+        cmds.setAttr(rctrl[0] + '.rotate', lock=True) 
+        cmds.setAttr(rctrl[0] + '.scale', lock=True) 
+        cmds.setAttr(ectrl[0] + '.rotate', lock=True) 
+        cmds.setAttr(ectrl[0] + '.scale', lock=True) 
         pctrls.append([rctrl, ectrlGrp])
         partNodes.append(rctrlGrp)
         partNodes.append(ectrlGrp)
