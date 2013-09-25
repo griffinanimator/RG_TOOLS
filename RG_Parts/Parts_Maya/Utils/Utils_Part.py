@@ -10,37 +10,30 @@ def createJoints(prefix, lytObs, *args):
 
     cmds.select(d=True)
 
-    ik_joints = []
+    joints = []
 
     jointOrientation = 'xyz'
 
+    cmds.select(d=True)
     for item in lytObs:
         """ item[0] will be the joint
             item[1] will be the position
-            item[2] will be the parent        
+            item[2] will be the rotation for orient        
         """     
         newJointName = prefix+item[0]
 
-        cmds.select(d=True)
+       
         if cmds.objExists(newJointName) == True:
             cmds.delete(newJointName)
-        jnt = cmds.joint(p=item[1], n=newJointName )
-        ik_joints.append(jnt)
+        cmds.select(d=True)
+        jnt = cmds.joint(p=item[1], n=newJointName, o=item[2] )
+        joints.append(jnt)
 
+    for j in range(len(joints)):
+        if j != 0:
+            cmds.parent(joints[j], joints[j-1])
 
-    lytLen = len(lytObs)
-
-    for item in range(len(lytObs)):
-        if lytObs[item][2] != 'None':
-            joint = prefix+lytObs[item][0]
-            jointParent = prefix+lytObs[item][2]
-            cmds.parent(joint, jointParent) 
-
-    for jnt in ik_joints:
-        cmds.joint(jnt, e=True, oj=jointOrientation, secondaryAxisOrient='yup', ch=True, zso=True)
-
-
-    return ik_joints  
+    return joints  
 
 
 #NOTE:  I am trying a new method

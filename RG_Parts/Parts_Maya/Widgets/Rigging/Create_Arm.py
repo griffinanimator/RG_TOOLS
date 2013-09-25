@@ -9,7 +9,6 @@ CLASS_NAME = "Create_Arm"
 
 TITLE = "Arm"
 DESCRIPTION = "Create an arm rig"
-#ICON = os.environ["GEPPETTO"] + "/Icons/singleChain_button.bmp"
 
 class Create_Arm:
   
@@ -19,41 +18,31 @@ class Create_Arm:
         self.jnt_info = {}
         self.hand_info = {}
 
-    def install(self, *args):
-        # Collect layout info
-        sel = cmds.ls(sl=True)
-        # Find the part root in case we have dont have it selected.
-        # NOTE:  Keep an eye on this.
-        nodes = cmds.listRelatives(sel, ad=True, ap=True, type='transform')
-        relativeNodes = []
-
-        if sel[0].startswith('PartRoot_'):
-            relativeNodes.append(sel[0])
-
-        for each in nodes:
-            if each.startswith('PartRoot_'):
-                relativeNodes.append(each)
-            if each.startswith('PartRoot_Grp'):
-                relativeNodes.remove(each)
-                
-        sel = relativeNodes
-  
-        lytObs = part_utils.collectLayoutInfo(sel)
+    def install(self, part_data, namespace, *args):
+        print part_data
+        # Collect the first joint from each pjoint key
+        jntInfo = []
+        for j in range(len(part_data['pjntnames'])):
+            pos = cmds.xform(namespace+part_data['pjntnames'][j][0], q=True, ws=True, t=True)
+            rot = cmds.xform(namespace+part_data['pjntnames'][j][0], q=True, ws=True, ro=True)
+            jntInfo.append([part_data['names'][j], pos, rot])
 
         twist = True
         
         # Create an ik joint chain
-        self.jnt_info['ikJnts'] = part_utils.createJoints('ikj_', lytObs)
+
+        self.jnt_info['ikJnts'] = part_utils.createJoints('ikj_', jntInfo )
         # Create an fk joint chain
-        self.jnt_info['fkJnts'] = part_utils.createJoints('fkj_', lytObs)
-        # NOTE: I need the end joint to get orientation for wrist controls but
-        # Then I can get rid of it.
-        lytObs.pop()
-        # Create an rig joint chain
-        self.jnt_info['rigJnts'] = part_utils.createJoints('rigj_', lytObs)
+        self.jnt_info['fkJnts'] = part_utils.createJoints('fkj_', jntInfo)
+        # Create rig joints
+        self.jnt_info['rigJnts'] = part_utils.createJoints('rigj_', jntInfo)
         # Handle twist joint creation
 
-      
+        # Connect the ik and fk joints to the rig joints
+        constraints = part_utils.connectThroughBC(self.jnt_info['fkJnts'], self.jnt_info['ikJnts'], self.jnt_info['rigJnts'], namespace)
+        self.jnt_info['bcNodes'] = constraints
+
+        """
         # Define names for components involved in ik setup
         tmpVar = sel[0].partition('PartRoot_')[2]
         userDefinedName = tmpVar.partition('_')[2]
@@ -69,9 +58,7 @@ class Create_Arm:
         #suffix = "%s_leg" % (side)
         suffix = userDefinedName 
 
-        # Connect the ik and fk joints to the rig joints
-        constraints = part_utils.connectThroughBC(self.jnt_info['fkJnts'], self.jnt_info['ikJnts'], self.jnt_info['rigJnts'], suffix)
-        self.jnt_info['bcNodes'] = constraints
+        
 
         # Define foot attribute names
         ctrlAttrs = ('twist', 'stretch', 'stretch_bend', 'twist_offset')
@@ -160,7 +147,7 @@ class Create_Arm:
                 cmds.parent(ikInfo[i], plGrp)
 
         cmds.container(rigContainer, edit=True, addNode=plGrp, inc=True, ish=True, ihb=True, iha=True)
-
+        """
         """
         for each in self.jnt_info['rigJnts']:
             try:
@@ -175,6 +162,3 @@ class Create_Arm:
                 cmds.container(rigContainer, edit=True, addNode=each, inc=True, ish=True, ihb=True, iha=True)
             except: pass
         """
-
-
-
