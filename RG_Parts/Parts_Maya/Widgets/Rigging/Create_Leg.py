@@ -19,104 +19,92 @@ class Create_Leg:
         self.jnt_info = {}
         self.foot_info = {}
 
-    def install(self, *args):
-        # Collect layout info
-        sel = cmds.ls(sl=True)
-        # Find the part root in case we have dont have it selected.
-        # NOTE:  Keep an eye on this.
-        nodes = cmds.listRelatives(sel, ad=True, ap=True, type='transform')
-        relativeNodes = []
+    def install(self, part_data, namespace, instance, partData, *args):
+        print part_data
+        # Collect the first joint from each pjoint key
+        jntInfo = []
+        for j in range(len(part_data['pjntnames'])):
+            pos = cmds.xform(namespace+part_data['pjntnames'][j][0], q=True, ws=True, t=True)
+            rot = cmds.xform(namespace+part_data['pjntnames'][j][0], q=True, ws=True, ro=True)
+            jntInfo.append([part_data['names'][j], pos, rot])
 
-        if sel[0].startswith('PartRoot_'):
-            relativeNodes.append(sel[0])
-
-        for each in nodes:
-            if each.startswith('PartRoot_'):
-                relativeNodes.append(each)
-            if each.startswith('PartRoot_Grp'):
-                relativeNodes.remove(each)
-                
-        sel = relativeNodes
-  
-    	lytObs = part_utils.collectLayoutInfo(sel)
-
-        # Create an rig joint chain
-        self.jnt_info['rigJnts'] = part_utils.createJoints('rigj_', lytObs)
+        twist = True
+        
         # Create an ik joint chain
-    	self.jnt_info['ikJnts'] = part_utils.createJoints('ikj_', lytObs)
+
+        self.jnt_info['ikJnts'] = part_utils.createJoints('ikj_' + instance, jntInfo )
         # Create an fk joint chain
-        self.jnt_info['fkJnts'] = part_utils.createJoints('fkj_', lytObs)
-        """
-        # Define names for components involved in ik setup
-        tmpVar = sel[0].partition('PartRoot_')[2]
-        userDefinedName = tmpVar.partition('_')[2]
-
-        ikHandleName = userDefinedName + '_ikh'
-        
-        ctrlName = userDefinedName + '_ctrl'
-        
-        pvName = userDefinedName + '_pv_ctrl'
-
-        suffix = userDefinedName 
+        self.jnt_info['fkJnts'] = part_utils.createJoints('fkj_' + instance, jntInfo)
+        # Create rig joints
+        self.jnt_info['rigJnts'] = part_utils.createJoints('rigj_' + instance, jntInfo)
+        # Handle twist joint creation
 
         # Connect the ik and fk joints to the rig joints
-        constraints = part_utils.connectThroughBC(self.jnt_info['fkJnts'], self.jnt_info['ikJnts'], self.jnt_info['rigJnts'], suffix)
+        constraints = part_utils.connectThroughBC(self.jnt_info['fkJnts'], self.jnt_info['ikJnts'], self.jnt_info['rigJnts'], instance)
         self.jnt_info['bcNodes'] = constraints
-        #constraints = part_utils.connectJointChains(self.jnt_info['ikJnts'], self.jnt_info['rigJnts'])
-        #self.jnt_info['ikConstraints'] = constraints
 
+        ikHandleName = 'ikh_'+ instance + 'leg'
+   
+        ctrlName = partData['ikcontrol'][0].replace('s_', instance)
+        
+        pvName = partData['ikcontrol'][1].replace('s_', instance)
+        
         # Define foot attribute names
         ctrlAttrs = ('twist', 'stretch', 'stretch_bend', 'foot_roll', 'roll_break', 'foot_twist', 'foot_bank', 'pivot_posX', 'pivot_posZ', 'toe_flap', 'twist_offset')
         
         # NOTE: Dynamically generate the control objects
-        footControl = part_utils.setupControlObject("FootControl.ma", ctrlName, ctrlAttrs, lytObs[2][1], os.environ['Parts_Maya_Controls'])
+        footControl = part_utils.setupControlObject("FootControl.ma", ctrlName, ctrlAttrs, jntInfo[2][1], jntInfo[2][2], os.environ['Parts_Maya_Controls'])
+        
         # Do som additional adjustment to the foot control
-        posY = cmds.xform(lytObs[5][0], q=True, ws=True, t=True)
-        posXZ = cmds.xform(lytObs[2][0], q=True, ws=True, t=True)
-        cmds.xform(footControl[0], t=[posXZ[0], posY[1], posXZ[2]], ws=True)
-        cmds.xform(footControl[0], piv=posXZ, ws=True)
-        cmds.xform(footControl[1], piv=posXZ, ws=True)
+        #posY = cmds.xform(lytObs[5][0], q=True, ws=True, t=True)
+        #posXZ = cmds.xform(lytObs[2][0], q=True, ws=True, t=True)
+        #cmds.xform(footControl[0], t=[posXZ[0], posY[1], posXZ[2]], ws=True)
+        #cmds.xform(footControl[0], piv=posXZ, ws=True)
+        #cmds.xform(footControl[1], piv=posXZ, ws=True)
 
         # Create the stretchy ik chain
-        ikInfo = part_utils.createStretchyIk(self.jnt_info['ikJnts'], self.jnt_info['rigJnts'], footControl, ikHandleName, pvName, suffix)
+        ikInfo = part_utils.createStretchyIk(self.jnt_info['ikJnts'], self.jnt_info['rigJnts'], footControl, ikHandleName, pvName, instance)
         self.foot_info['ikNodes'] = ikInfo
+
         
         # Setup the ik foot
         ikJntPos = []
-        for jnt in self.jnt_info['ikJnts']:
-            pos = cmds.xform(jnt, q=True, t=True, ws=True)
+        for jnt in part_data['pjntnames']:
+            pos = cmds.xform(namespace+jnt[0], q=True, t=True, ws=True)
             ikJntPos.append(pos)
-        self.foot_info['footInfo'] = self.setupRGFoot(suffix, footControl[1], ikJntPos, ikHandleName, ['.rx', '.ry', '.rz'])
 
-
+        pos = cmds.xform(namespace+part_data['pjntnames'][4][1], q=True, t=True, ws=True)
+        ikJntPos.append(pos)
+        self.foot_info['footInfo'] = self.setupRGFoot(footControl[1], ikJntPos, ikHandleName, ['.rx', '.ry', '.rz'])
+        
+        
         # Setup the FK controls
-        ctrlAttrs = ('stretch', 'size')
+        ctrlAttrs = (['stretch'])
         fkControls = []
         for i in range(len(self.jnt_info['fkJnts'])):
             ctrlName = self.jnt_info['fkJnts'][i].replace('fkj_', 'ctrl_')
             ctrlPos = cmds.xform(self.jnt_info['fkJnts'][i], q=True, ws=True, t=True)
             ctrlRot = cmds.xform(self.jnt_info['fkJnts'][i], q=True, ws=True, ro=True)
 
-            fkControl = part_utils.setupControlObject("SphereControl.ma", ctrlName, ctrlAttrs, ctrlPos, os.environ['Parts_Maya_Controls'])
+            fkControl = part_utils.setupControlObject("SphereControl.ma", ctrlName, ctrlAttrs, jntInfo[i][1], jntInfo[i][2], os.environ['Parts_Maya_Controls'])
             fkControls.append(fkControl)
 
-            cmds.xform(fkControl[0], ws=True, t=ctrlPos)
-            cmds.xform(fkControl[0], ws=True, ro=ctrlRot)
+            #cmds.xform(fkControl[0], ws=True, t=ctrlPos)
+            #cmds.xform(fkControl[0], ws=True, ro=ctrlRot)
             cmds.parentConstraint(fkControl[1], self.jnt_info['fkJnts'][i], mo=True)
 
         for i in range(len(fkControls)):
             if i !=0:
                 cmds.parent(fkControls[i][0], fkControls[i-1][1])
-                cmds.setAttr(fkControls[i][1]+'.size', 1)
+        
         
         # Setup FK stretch
         part_utils.createStretchyFk(fkControls, '.tx')
       
         # Setup the foot settings control  
-        ctrlPos = cmds.xform(self.jnt_info['rigJnts'][4], q=True, ws=True, t=True)
         ctrlAttrs = (['ik_fk'])
-        ctrlName = userDefinedName + '_settings_ctrl'
-        settingsControl = part_utils.setupControlObject("SettingsControl.ma", ctrlName, ctrlAttrs, ctrlPos, os.environ['Parts_Maya_Controls'])
+        ctrlName = partData['setcontrol'].replace('s_', instance)
+        settingsControl = part_utils.setupControlObject("SettingsControl.ma", ctrlName, ctrlAttrs, jntInfo[2][1], jntInfo[2][2], os.environ['Parts_Maya_Controls'])
         # NOTE:  I need a temp fix to make IK_FK attr an Enum.
 
         # Hookup ik fk switch
@@ -128,15 +116,15 @@ class Create_Leg:
         fkControls.append(footControl)
         fkControls.append(settingsControl)
         self.foot_info['controls'] = fkControls
- 
+        
 
         # Add the leg rig to a container.
-        rigContainerName = ('Rig_Container_' + userDefinedName)
+        rigContainerName = ('Rig_Container_' + instance + partData['rootname'])
         rigContainer = cmds.container(n=rigContainerName)
         cmds.addAttr(rigContainer, shortName='Link', longName='Link', dt='string')
 
         # Group the arm under a master transform
-        partLinkGrpName = ('Part_Link_' + userDefinedName)
+        partLinkGrpName = ('Part_Link_' + instance + partData['rootname'])
         plGrp = cmds.group(n=partLinkGrpName, em=True)
         plGrpPos = cmds.xform(self.jnt_info['rigJnts'][0], q=True, ws=True, t=True)
         cmds.xform(plGrp, ws=True, t=plGrpPos)
@@ -147,11 +135,11 @@ class Create_Leg:
         cmds.parent(settingsControl[0], plGrp)
         cmds.parent(footControl[0], plGrp)
         cmds.parent(fkControls[0][0], plGrp)
-        for each in ikInfo:
-            cmds.parent(each, plGrp)
+        for i in range(len(ikInfo)):      
+            cmds.parent(ikInfo[i], plGrp)
 
         cmds.container(rigContainer, edit=True, addNode=plGrp, inc=True, ish=True, ihb=True, iha=True)
-        """
+        
         """
         for each in self.jnt_info['rigJnts']:
             try:
@@ -167,8 +155,9 @@ class Create_Leg:
             except: pass
         """
         
-    def setupRGFoot(self, suffix, footControl, ikJntPos, ikHandleName, orient, *args):
+    def setupRGFoot(self, footControl, ikJntPos, ikHandleName, orient, *args):
         print 'In Setup Foot'
+        suffix = ikHandleName.replace('ikh_', '')
         # NOTE: I want to pass in an orient argument that will determine rotation connections for foot groups.
         
         # NOTE:  Add all created nodes to a list.
@@ -213,6 +202,8 @@ class Create_Leg:
                 cmds.xform(grp, t=ikJntPos[5])
             if grp == footGrps[2] + '_' + suffix:
                 cmds.xform(grp, t=ikJntPos[4])
+            
+        
         for i in range(len(footGrps)):
             footNodes.append(footGrps[i])
             cmds.select(d=True)
@@ -261,16 +252,18 @@ class Create_Leg:
         # Animated Pivot
         pivLoc = cmds.spaceLocator(n='lctrTwist_'+suffix)
         cmds.parent(pivLoc[0], footControl)
-        cmds.xform(pivLoc[0], t=ikJntPos[4])
-        fgTran = cmds.getAttr(footGrps[4]+ '_' + suffix + '.translate')
-        cmds.connectAttr(footControl+'.pivot_posX', pivLoc[0]+'.tx')
-        cmds.connectAttr(footControl+'.pivot_posZ', pivLoc[0]+'.tz')
+        cmds.xform(pivLoc[0], ws=True, t=ikJntPos[4])
+        
+        #fgTran = cmds.getAttr(footGrps[4]+ '_' + suffix + '.translate')
+        #cmds.connectAttr(footControl+'.pivot_posX', pivLoc[0]+'.tx')
+        #cmds.connectAttr(footControl+'.pivot_posZ', pivLoc[0]+'.tz')
         
 
-        cmds.connectAttr(footControl+'.foot_twist', footGrps[0]+ '_' + suffix + orient[1])
-        cmds.connectAttr(footControl+'.foot_bank', footGrps[0]+ '_' + suffix + orient[2])
+        #cmds.connectAttr(footControl+'.foot_twist', footGrps[0]+ '_' + suffix + orient[1])
+        #cmds.connectAttr(footControl+'.foot_bank', footGrps[0]+ '_' + suffix + orient[2])
 
         return footNodes
 
         # Hookup control vis for the switch
         # NOTE:  This import is temp
+        

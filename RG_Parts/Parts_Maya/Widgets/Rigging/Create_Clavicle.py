@@ -18,30 +18,14 @@ class Create_Clavicle:
         self.tmpRigElements = []
         self.rig_info = {}
 
-
-    def install(self, *args):
-        # Collect layout info
-        sel = cmds.ls(sl=True)
-        # Find the part root in case we have dont have it selected.
-        # NOTE:  Keep an eye on this.
-        nodes = cmds.listRelatives(sel, ad=True, ap=True, type='transform')
-        relativeNodes = []
-
-        if sel[0].startswith('PartRoot_'):
-            relativeNodes.append(sel[0])
-
-        for each in nodes:
-            if each.startswith('PartRoot_'):
-                relativeNodes.append(each)
-            if each.startswith('PartRoot_Grp'):
-                relativeNodes.remove(each)
-                
-        sel = relativeNodes
-
-        tmpVar = sel[0].partition('PartRoot_')[2]
-        userDefinedName = tmpVar.partition('_')[2]
-  
-        lytObs = part_utils.collectLayoutInfo(sel)
+    def install(self, part_data, namespace, instance, partData, *args):
+        print part_data
+        # Collect the first joint from each pjoint key
+        jntInfo = []
+        for j in range(len(part_data['pjntnames'])):
+            pos = cmds.xform(namespace+part_data['pjntnames'][j][0], q=True, ws=True, t=True)
+            rot = cmds.xform(namespace+part_data['pjntnames'][j][0], q=True, ws=True, ro=True)
+            jntInfo.append([part_data['names'][j], pos, rot])
 
         # Create an rig joint chain
         self.jnt_info['rigJnts'] = part_utils.createJoints('rigj_', lytObs)

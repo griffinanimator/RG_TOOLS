@@ -6,7 +6,7 @@ import Utils.Utils_Part as part_utils
 reload(part_utils)
 
 CLASS_NAME = "Create_ASpine"
-TITLE = "Awesome Spine"
+TITLE = "Spine"
 DESCRIPTION = "Create an awesome spine"
 
 
@@ -19,35 +19,20 @@ class Create_ASpine:
         self.rig_info = {}
 
 
-    def install(self, *args):
-        # Collect layout info
-        sel = cmds.ls(sl=True)
-        # Find the part root in case we have dont have it selected.
-        # NOTE:  Keep an eye on this.
-        nodes = cmds.listRelatives(sel, ad=True, ap=True, type='transform')
-        relativeNodes = []
-
-        if sel[0].startswith('PartRoot_'):
-            relativeNodes.append(sel[0])
-
-        for each in nodes:
-            if each.startswith('PartRoot_'):
-                relativeNodes.append(each)
-            if each.startswith('PartRoot_Grp'):
-                relativeNodes.remove(each)
-                
-        sel = relativeNodes
-
-        tmpVar = sel[0].partition('PartRoot_')[2]
-        userDefinedName = tmpVar.partition('_')[2]
-  
-        lytObs = part_utils.collectLayoutInfo(sel)
+    def install(self, part_data, namespace, instance, partData, *args):
+        print part_data
+        # Collect the first joint from each pjoint key
+        jntInfo = []
+        for j in range(len(part_data['pjntnames'])):
+            pos = cmds.xform(namespace+part_data['pjntnames'][j][0], q=True, ws=True, t=True)
+            rot = cmds.xform(namespace+part_data['pjntnames'][j][0], q=True, ws=True, ro=True)
+            jntInfo.append([part_data['names'][j], pos, rot])
 
         # Create an rig joint chain
-        self.jnt_info['rigJnts'] = part_utils.createJoints('rigj_', lytObs)
+        self.jnt_info['rigJnts'] = part_utils.createJoints('rigj_' + instance, jntInfo)
         # Create an ik joint chain
-        self.jnt_info['iksJnts'] = part_utils.createJoints('ikSj_', lytObs)
-        self.jnt_info['ikrJnts'] = part_utils.createJoints('ikRj_', lytObs)
+        self.jnt_info['iksJnts'] = part_utils.createJoints('ikSj_' + instance, jntInfo)
+        self.jnt_info['ikrJnts'] = part_utils.createJoints('ikRj_' + instance, jntInfo)
 
         # Add all of the joints to rig_info{}
         for each in self.jnt_info['rigJnts']:
@@ -60,7 +45,7 @@ class Create_ASpine:
         spl = len(self.jnt_info['iksJnts']) -1
 
         # Create a new joint at the root, the mid, and the top of the iksJoint chain.
-        rootJointList = ([userDefinedName + '_ikBRoot', cmds.xform(self.jnt_info['iksJnts'][0], q=True, ws=True, t=True)], [userDefinedName + '_ikMRoot', cmds.xform(self.jnt_info['iksJnts'][2], q=True, ws=True, t=True)], [userDefinedName + '_ikTRoot', cmds.xform(self.jnt_info['iksJnts'][spl], q=True, ws=True, t=True)])
+        rootJointList = (['ikBRoot_' + instance, cmds.xform(self.jnt_info['iksJnts'][0], q=True, ws=True, t=True)], ['ikMRoot_' + instance, cmds.xform(self.jnt_info['iksJnts'][2], q=True, ws=True, t=True)], ['ikTRoot_' + instance, cmds.xform(self.jnt_info['iksJnts'][spl], q=True, ws=True, t=True)])
        
         rootJoints = []
         for i in rootJointList:
@@ -72,23 +57,23 @@ class Create_ASpine:
 
         
         # Define names for components involved in ik setup
-        ikHandleName = userDefinedName + '_ikh'
-        ctrlName = userDefinedName + '_ctrl'
+        ikHandleName = 'ikh_'+ instance + 'arm'
+        ctrlName = partData['ikcontrol'][0].replace('s_', instance)
 
         # Draw a splineIK from the root to the last iksJnt.
-        ikSol = cmds.ikHandle(n=userDefinedName + '_spine_Ik', solver='ikSplineSolver', sj=self.jnt_info['iksJnts'][0], ee=self.jnt_info['iksJnts'][spl], ccv=True)
+        ikSol = cmds.ikHandle(n='spine_Ik'+instance, solver='ikSplineSolver', sj=self.jnt_info['iksJnts'][0], ee=self.jnt_info['iksJnts'][spl], ccv=True)
         self.tmpRigElements.append(ikSol)
         cmds.select(d=True)
         
         # Bind the splineIK curve to those 2 new joints.
         cmds.select('curve1', rootJoints)
-        sc = cmds.skinCluster(n=userDefinedName + 'skinCluster', tsb=True)
+        sc = cmds.skinCluster(n='skinCluster'+instance, tsb=True)
         self.tmpRigElements.append(sc)
         
         #Rename the curve
         cmds.setAttr('curve1.inheritsTransform', 0)
-        cmds.rename('curve1', userDefinedName+'_aSpine_curve')
-        self.tmpRigElements.append(userDefinedName+'_aSpine_curve')
+        cmds.rename('curve1', 'aSpine_curve'+instance)
+        self.tmpRigElements.append('aSpine_curve'+instance)
 
         # Draw an iKhandle between each self.jnt_info['ikrJnts']
         ikHandles = []
@@ -147,7 +132,7 @@ class Create_ASpine:
                 cmds.setAttr(pma+'.operation', 3) #average
                 pma_nodes.append(pma)
 
-
+        
         # Now connect the Pma
         self.jnt_info['twistPma'] = pma_nodes
         cmds.connectAttr(self.jnt_info['rootJnts'][0] + '.ry', self.jnt_info['twistPma'][2]+'.input1D[0]')
@@ -172,7 +157,8 @@ class Create_ASpine:
         # NOTE: Try the expression method
         # NOTE: Add stretch ammount attribute.
         #cmds.expression( s= 'surface1.sx = %s.arcLength' %  curveInfoNode )
-        curveInfoNode = cmds.arclen(userDefinedName+'_aSpine_curve', ch=True)
+        
+        curveInfoNode = cmds.arclen('aSpine_curve'+instance, ch=True)
         
         mdsNode_Name = self.jnt_info['iksJnts'][0].replace('ikSj', 'mdStretch') 
         mds = cmds.shadingNode("multiplyDivide", asUtility=True, n=mdsNode_Name)
@@ -189,13 +175,13 @@ class Create_ASpine:
             cmds.connectAttr(mds+'.outputX', self.jnt_info['iksJnts'][i]+'.sx')
 
 
-        cmds.rename(curveInfoNode, userDefinedName+'_curveInfo')
+        cmds.rename(curveInfoNode, 'curveInfo'+instance)
 
         # Setup controls
-        suffix = userDefinedName 
         ctrlAttrs = []
 
         spineCtrls = []
+        
         """
         spineCtrls contents
         [u'grp_Spine__c0_ctrl_hip', u'Spine__c0_ctrl_hip'] 0
@@ -204,28 +190,29 @@ class Create_ASpine:
         [u'grp_Spine__c0_ctrl_2', u'Spine__c0_ctrl_2'] 3
         [u'grp_Spine__c0_ik_ctrl_1', u'Spine__c0_ik_ctrl_1'] 4
         """
-
+        
         # Create the hip control
-        ctrlName = userDefinedName + '_ctrl_hip'
+        ctrlName = part_data['fkcontrols'][0].replace('s_', instance)
         ctrlPos = cmds.xform(self.jnt_info['rootJnts'][0], q=True, ws=True, t=True)
-        spineControl = part_utils.setupControlObject("HipControl.ma", ctrlName, ctrlAttrs, ctrlPos, os.environ['Parts_Maya_Controls'])
+        
+        spineControl = part_utils.setupControlObject("HipControl.ma", ctrlName, ctrlAttrs, jntInfo[0][1], jntInfo[0][2], os.environ['Parts_Maya_Controls'])
         cmds.parentConstraint(spineControl[1], self.jnt_info['rootJnts'][0])
         spineCtrls.append(spineControl)
 
         
         for i in range(len(self.jnt_info['rootJnts'])):
-            ctrlName = userDefinedName + '_ctrl_' + str(i)
+            ctrlName = part_data['fkcontrols'][i].replace('s_', instance)
             ctrlPos = cmds.xform(self.jnt_info['rootJnts'][i], q=True, ws=True, t=True)
             # NOTE: Dynamically generate the control objects
-            spineControl = part_utils.setupControlObject("FkSpineControl.ma", ctrlName, ctrlAttrs, ctrlPos, os.environ['Parts_Maya_Controls'])
+            spineControl = part_utils.setupControlObject("FkSpineControl.ma", ctrlName, ctrlAttrs, jntInfo[i][1], jntInfo[i][2], os.environ['Parts_Maya_Controls'])
             if i == 2:
                 cmds.parentConstraint(spineControl, self.jnt_info['rootJnts'][i], mo=True)
             spineCtrls.append(spineControl)
-
+        
         # Create the mid spine control
-        ctrlName = userDefinedName + '_ik_ctrl_' + str(1)
+        ctrlName = part_data['fkcontrols'][3].replace('s_', instance)
         ctrlPos = cmds.xform(self.jnt_info['rootJnts'][1], q=True, ws=True, t=True)
-        spineControl = part_utils.setupControlObject("spineControl.ma", ctrlName, ctrlAttrs, ctrlPos, os.environ['Parts_Maya_Controls'])
+        spineControl = part_utils.setupControlObject("spineControl.ma", ctrlName, ctrlAttrs, jntInfo[i][1], jntInfo[i][2], os.environ['Parts_Maya_Controls'])
         cmds.parentConstraint(spineControl, self.jnt_info['rootJnts'][1], mo=True)
         spineCtrls.append(spineControl)
 
@@ -235,20 +222,19 @@ class Create_ASpine:
         cmds.parent(spineCtrls[4][0], spineCtrls[2][1])
         cmds.parent(spineCtrls[3][0], spineCtrls[2][1])
         cmds.parent(spineCtrls[2][0], spineCtrls[1][1])
-
+        
         # Cleanup
         for each in spineCtrls:
             self.tmpRigElements.append(each)
 
         self.rig_info['rig_info'] = self.tmpRigElements
 
-        # Add the leg rig to a container.
-        rigContainerName = ('Rig_Container_' + userDefinedName)
+        rigContainerName = ('Rig_Container_' + instance + partData['rootname'])
         rigContainer = cmds.container(n=rigContainerName)
         cmds.addAttr(rigContainer, shortName='Link', longName='Link', dt='string')
 
         # Group the arm under a master transform
-        partLinkGrpName = ('Part_Link_' + userDefinedName)
+        partLinkGrpName = ('Part_Link_' + instance + partData['rootname'])
         plGrp = cmds.group(n=partLinkGrpName, em=True)
         plGrpPos = cmds.xform(self.jnt_info['rigJnts'][0], q=True, ws=True, t=True)
         cmds.xform(plGrp, ws=True, t=plGrpPos)
@@ -259,8 +245,9 @@ class Create_ASpine:
         cmds.parent(self.jnt_info['ikrJnts'][0], plGrp)
         cmds.parent(ikSol[0], plGrp)
         cmds.parent(spineCtrls[0][0], plGrp)
-        cmds.parent(spineCtrls[1][0], plGrp)
-        cmds.parent(userDefinedName+'_aSpine_curve', plGrp)
+        #print spineCtrls[1][0]
+        #cmds.parent(spineCtrls[1][0], plGrp)
+        cmds.parent('aSpine_curve'+instance, plGrp)
 
         for each in rootJoints:
             cmds.parent(each, plGrp)
@@ -272,3 +259,4 @@ class Create_ASpine:
             try:
                 cmds.container(rigContainer, edit=True, addNode=element, inc=True, ish=True, ihb=True, iha=True)
             except: pass
+        

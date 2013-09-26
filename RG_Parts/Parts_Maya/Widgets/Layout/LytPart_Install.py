@@ -45,13 +45,15 @@ def install(part, dm, ns, *args):
         # New namespace
         #cmds.namespace(add=partInfo['partnames'][n])
         # Create the joints
-        cmds.select(d=True)
-        pjntRootName = partInfo['pjntnames'][n][0]
-        pjntEndName = partInfo['pjntnames'][n][1]
-        pjntRoot = cmds.joint(n=pjntRootName, p=partInfo['positions'][n])
-        pjntEnd = cmds.joint(n=pjntEndName, p=partInfo['positions'][n+1])
-        pjntList.append(pjntRoot)
-        pjntList.append(pjntEnd)
+        try:
+            cmds.select(d=True)
+            pjntRootName = partInfo['pjntnames'][n][0]
+            pjntEndName = partInfo['pjntnames'][n][1]
+            pjntRoot = cmds.joint(n=pjntRootName, p=partInfo['positions'][n])
+            pjntEnd = cmds.joint(n=pjntEndName, p=partInfo['positions'][n+1])
+            pjntList.append(pjntRoot)
+            pjntList.append(pjntEnd)
+        except: pass
         
         if n == 0:
             tmpConstraint = cmds.parentConstraint(pjntRoot, ctrlGrp, mo=False)

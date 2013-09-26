@@ -411,6 +411,3 @@ class PartParam_UI:
 
         for key, value in lctrInfo.iteritems() :
             print key, value
-
-
-

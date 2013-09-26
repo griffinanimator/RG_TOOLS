@@ -23,9 +23,11 @@ class RigPart_Install:
     	sel = cmds.ls(sl=True, type='transform')
     	# Find the namespace of selected.
     	tns = sel[0].partition(':')
-    	namespace = tns[0]+tns[1]
-    	extractedName = namespace.partition('_')[0]
-
+    	namespace = tns[0]+tns[1]  # Arm_L_01_:
+    	extractedName = namespace.partition('_')[0] # Arm
+    	ti = namespace.partition('_')[2] 
+    	instance = ti.replace(':', '') # L_01_
+    
     	for part in self.returnparts(self.rigWtPath):
     		mod = __import__("Widgets.Rigging."+part, {}, {}, [part])
     		reload(mod)
@@ -35,18 +37,19 @@ class RigPart_Install:
 
     		if title == extractedName:
     			part == title
+    			print "The Part is "+part
     			self.collectPartInfo(title)
-    			self.installPart(part, namespace)
+    			self.installPart(part, namespace, instance)
 
 
-    def installPart(self, part, namespace, *args):
+    def installPart(self, part, namespace, instance, *args):
         print "Install"
         mod = __import__("Widgets.Rigging."+part, {}, {}, [part])
         reload(mod)
            
         partClass = getattr(mod, mod.CLASS_NAME)
         partInstance = partClass()
-        partInstance.install(self.part_data, namespace)
+        partInstance.install(self.part_data, namespace, instance, self.part_data)
 
 
 

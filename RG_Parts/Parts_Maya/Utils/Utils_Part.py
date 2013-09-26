@@ -231,7 +231,7 @@ def calculateAngleBetweenNormalisedVectors(VectA, VectB, *args):
 
     return degrees(radians)
 
-def setupControlObject(control, ctrlName, ctrlAttrs, ctrlPos, ctrlPath, *args):
+def setupControlObject(control, ctrlName, ctrlAttrs, ctrlPos, ctrlRot, ctrlPath, *args):
     # NOTE:  I need a better way to handle this
     # Allow for types such as (Vector, Integer, String, Float, Boolean, Enum)
     # Delete the control if it exists
@@ -246,6 +246,7 @@ def setupControlObject(control, ctrlName, ctrlAttrs, ctrlPos, ctrlPath, *args):
         cmds.rename('grp_control', ctrlGrp)
         # Move the control to the  position
         cmds.xform('grp_%s' % (ctrlName), t=ctrlPos, ws=True)
+        cmds.xform('grp_%s' % (ctrlName), ro=ctrlRot, ws=True)
     # Add the control attributes
     if len(ctrlAttrs)!= 0:
         cmds.select(ctrlName)
@@ -282,7 +283,8 @@ def collectLayoutInfo(sel, *args):
     return lytTmp
 
 
-def createStretchyIk(ikjnt_info, rjnt_info, control, ikHandleName, pvName, suffix, *args): 
+def createStretchyIk(ikjnt_info, rjnt_info, control, ikHandleName, pvName, instance, *args): 
+    suffix = ikHandleName.replace('ikh_', '')
 
     rootPos = cmds.xform(ikjnt_info[0], q=True, t=True, ws=True)
     midPos = cmds.xform(ikjnt_info[1], q=True, t=True, ws=True)
@@ -421,11 +423,13 @@ def connectJointChains(parents, children):
         #constraints.append(constraint)
     return constraints
 
-def connectThroughBC(parentsA, parentsB, children, suffix):
+def connectThroughBC(parentsA, parentsB, children, instance):
     constraints = []
+    
     for j in range(len(children)):
-        bcNodeT = cmds.shadingNode("blendColors", asUtility=True, n='bcNodeT_switch_' + suffix)
-        bcNodeR = cmds.shadingNode("blendColors", asUtility=True, n='bcNodeR_switch_' + suffix)
+        switchPrefix = children[j].partition('_')[2]
+        bcNodeT = cmds.shadingNode("blendColors", asUtility=True, n='bcNodeT_switch_' + switchPrefix)
+        bcNodeR = cmds.shadingNode("blendColors", asUtility=True, n='bcNodeR_switch_' + switchPrefix)
         constraints.append([bcNodeT, bcNodeR])
         # Input Parents
         cmds.connectAttr(parentsA[j] + '.translate', bcNodeT + '.color1')
