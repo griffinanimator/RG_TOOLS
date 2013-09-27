@@ -6,7 +6,7 @@ import Utils.Utils_Part as part_utils
 reload(part_utils)
 
 CLASS_NAME = "Create_Root"
-TITLE = "Create Root"
+TITLE = "Root"
 DESCRIPTION = "Create a Character Root, Motion, and Anim"
 
 
@@ -68,10 +68,8 @@ class Create_Root:
         self.rig_info['rig_info'] = self.tmpRigElements
 
 
-        # Add the leg rig to a container.
-        rigContainerName = ('Rig_Container_' + userDefinedName)
-        rigContainer = cmds.container(n=rigContainerName)
-        cmds.addAttr(rigContainer, shortName='Link', longName='Link', dt='string')
+        # Add the rig to a container.
+        rigContainer = part_utils.createRigContainer(instance, partData['rootname']) 
 
         # Group the arm under a master transform
         partLinkGrpName = ('Part_Link_' + userDefinedName)

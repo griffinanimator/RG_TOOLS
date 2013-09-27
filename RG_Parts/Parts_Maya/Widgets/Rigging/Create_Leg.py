@@ -118,10 +118,8 @@ class Create_Leg:
         self.foot_info['controls'] = fkControls
         
 
-        # Add the leg rig to a container.
-        rigContainerName = ('Rig_Container_' + instance + partData['rootname'])
-        rigContainer = cmds.container(n=rigContainerName)
-        cmds.addAttr(rigContainer, shortName='Link', longName='Link', dt='string')
+        # Add the rig to a container.
+        rigContainer = part_utils.createRigContainer(instance, partData['rootname']) 
 
         # Group the arm under a master transform
         partLinkGrpName = ('Part_Link_' + instance + partData['rootname'])

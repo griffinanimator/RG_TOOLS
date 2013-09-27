@@ -11,35 +11,37 @@ reload(utils_json)
 class RigPart_Install:
           
     def __init__(self):
-    	print 'Install'
-    	arttools = os.environ["GTOOLS"]
+        print 'Install'
+        arttools = os.environ["GTOOLS"]
         self.rigWtPath = arttools + "/RG_Parts/Parts_Maya/Widgets/Rigging/"
         self.part_data = {}
 
 
 
-    def install(self, *args):
-    	# NOTE: This could be done by selection or by an argument.
-    	sel = cmds.ls(sl=True, type='transform')
-    	# Find the namespace of selected.
-    	tns = sel[0].partition(':')
-    	namespace = tns[0]+tns[1]  # Arm_L_01_:
-    	extractedName = namespace.partition('_')[0] # Arm
-    	ti = namespace.partition('_')[2] 
-    	instance = ti.replace(':', '') # L_01_
+    def install(self, sel, *args):
+        # NOTE: This could be done by selection or by an argument.
+        print sel
+        # Find the namespace of selected.
+        tns = sel[0].partition(':')
+        namespace = tns[0]+tns[1]  # Arm_L_01_:
+        extractedName = namespace.partition('_')[0] # Arm
+        ti = namespace.partition('_')[2] 
+        instance = ti.replace(':', '') # L_01_
     
-    	for part in self.returnparts(self.rigWtPath):
-    		mod = __import__("Widgets.Rigging."+part, {}, {}, [part])
-    		reload(mod)
-    		title = mod.TITLE
-    		description = mod.DESCRIPTION
-    		classname = mod.CLASS_NAME
+        for part in self.returnparts(self.rigWtPath):
+            mod = __import__("Widgets.Rigging."+part, {}, {}, [part])
+            reload(mod)
+            title = mod.TITLE
+            description = mod.DESCRIPTION
+            classname = mod.CLASS_NAME
+            print title
+            print extractedName
 
-    		if title == extractedName:
-    			part == title
-    			print "The Part is "+part
-    			self.collectPartInfo(title)
-    			self.installPart(part, namespace, instance)
+            if title == extractedName:
+                part == title
+                print "The Part is "+part
+                self.collectPartInfo(title)
+                self.installPart(part, namespace, instance)
 
 
     def installPart(self, part, namespace, instance, *args):
@@ -69,14 +71,11 @@ class RigPart_Install:
 
     def collectPartInfo(self, part, *args):
 
-    	# Read the JSON file and store data to dict
-    	filename = 'Z:/RG_Parts/Parts_Maya/Widgets/Layout/Layout_Defs_New.json'
-    	data = utils_json.readJson(filename)
-    	info = json.loads( data )
-    	self.part_data = info[part]
-    	"""
-    	for key, value in self.part_data.iteritems() :
-        	print key, value
-       	"""
-    	
-    
+        # Read the JSON file and store data to dict
+        filename = 'Z:/RG_Parts/Parts_Maya/Widgets/Layout/Layout_Defs_New.json'
+        data = utils_json.readJson(filename)
+        info = json.loads( data )
+        self.part_data = info[part]
+        
+        for key, value in self.part_data.iteritems() :
+            print key, value 

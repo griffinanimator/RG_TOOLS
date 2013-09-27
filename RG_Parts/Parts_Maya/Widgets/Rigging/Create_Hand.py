@@ -68,9 +68,7 @@ class Create_Hand:
                 cmds.parent(fkControls[i][0], fkControls[i-1][1])
 
         # Add the rig to a container.
-        rigContainerName = ('Rig_Container_' + userDefinedName)
-        rigContainer = cmds.container(n=rigContainerName)
-        cmds.addAttr(rigContainer, shortName='Link', longName='Link', dt='string')
+        rigContainer = part_utils.createRigContainer(instance, partData['rootname']) 
 
         # Group the arm under a master transform
         partLinkGrpName = ('Part_Link_' + userDefinedName)

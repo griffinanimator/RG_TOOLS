@@ -97,11 +97,8 @@ class Create_Arm:
         fkControls.append(settingsControl)
         self.hand_info['controls'] = fkControls
        
-        # Add the arm rig to a container.
-        # NOTE: This should be a function
-        rigContainerName = ('Rig_Container_' + instance + partData['rootname'])
-        rigContainer = cmds.container(n=rigContainerName)
-        cmds.addAttr(rigContainer, shortName='Link', longName='Link', dt='string')
+        # Add the rig to a container.
+        rigContainer = part_utils.createRigContainer(instance, partData['rootname']) 
 
         # Group the arm under a master transform
         partLinkGrpName = ('Part_Link_' + instance + partData['rootname'])

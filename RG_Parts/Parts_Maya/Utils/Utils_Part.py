@@ -565,3 +565,10 @@ def collectPartHeirarchyInfo(*args):
     PartHi_Info['links'] = linkAttrs
     
     return PartHi_Info
+
+
+def createRigContainer(instance, partData, *args):
+    rigContainerName = ('Rig_Container_' + instance + partData)
+    rigContainer = cmds.container(n=rigContainerName)
+
+    return rigContainer

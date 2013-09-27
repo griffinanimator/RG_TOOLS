@@ -229,9 +229,8 @@ class Create_ASpine:
 
         self.rig_info['rig_info'] = self.tmpRigElements
 
-        rigContainerName = ('Rig_Container_' + instance + partData['rootname'])
-        rigContainer = cmds.container(n=rigContainerName)
-        cmds.addAttr(rigContainer, shortName='Link', longName='Link', dt='string')
+        # Add the rig to a container.
+        rigContainer = part_utils.createRigContainer(instance, partData['rootname']) 
 
         # Group the arm under a master transform
         partLinkGrpName = ('Part_Link_' + instance + partData['rootname'])
@@ -245,8 +244,6 @@ class Create_ASpine:
         cmds.parent(self.jnt_info['ikrJnts'][0], plGrp)
         cmds.parent(ikSol[0], plGrp)
         cmds.parent(spineCtrls[0][0], plGrp)
-        #print spineCtrls[1][0]
-        #cmds.parent(spineCtrls[1][0], plGrp)
         cmds.parent('aSpine_curve'+instance, plGrp)
 
         for each in rootJoints:

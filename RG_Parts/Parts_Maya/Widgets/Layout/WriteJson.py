@@ -41,7 +41,7 @@ tmpDict = {}
 
 # Clavicle
 tmpDict['rootname'] = ('clavicle')
-tmpDict['names'] = ('clavicle')
+tmpDict['names'] = (['clavicle'])
 tmpDict['positions'] = ([1.5, 8.0, 1.0], [2.0, 8.0, 0.0])
 tmpDict['jointnames'] = ('jnt_clavicle')
 tmpDict['pjntnames'] = (['pjnt_clavicle', 'pjnt_clavicleEnd'])
@@ -74,9 +74,9 @@ tmpDict = {}
 # Root
 tmpDict['rootname'] = ('root')
 tmpDict['names'] = ('ANIM', 'Motion', 'CHARACTER_ROOT')
-tmpDict['positions'] = ([0.0, 0.0, 0.0], [0.0, 4.0, 0.0], [0.0, 4.0, 0.0, [0.0, 5.0, 0.0]])
+tmpDict['positions'] = ([0.0, 0.0, 0.0], [0.0, 4.0, 0.0], [0.0, 4.0, 0.0], [0.0, 5.0, 0.0])
 tmpDict['jointnames'] = ('jnt_ANIM', 'jnt_Motion', 'jnt_CHARACTER_ROOT')
-tmpDict['pjntnames'] = (['pjnt_ANIM', 'pjnt_ANIMEnd'], ['pjnt_Motion', 'pjnt_MotionEnd', ['pjnt_CHARACTER_ROOT', 'pjnt_CHARACTER_ROOTEnd']])
+tmpDict['pjntnames'] = (['pjnt_ANIM', 'pjnt_ANIMEnd'], ['pjnt_Motion', 'pjnt_MotionEnd'], ['pjnt_CHARACTER_ROOT', 'pjnt_CHARACTER_ROOTEnd'])
 tmpDict['fkcontrols'] = ('ANIM_CHAR', 'Motion', 'CHARACTER_ROOT')
 tmpDict['partcontrols'] = (['pctrl_ANIM', 'pctrl_ANIMEnd'], ['pctrl_Motion', 'pctrl_MotionEnd'], ['pctrl_CHARACTER_ROOT', 'pctrl_CHARACTER_ROOTEnd'])
 tmpDict['ikcontrol'] = (['ctrl_s_root'])
@@ -116,6 +116,22 @@ tmpDict['setcontrol'] = ('ctrl_spine_s_settings')
 tmpDict['jntorient'] = ('xyz', 'yup') 
 tmpDict['ctrlro'] = ('xyz') 
 partInfo['Spine'] = tmpDict
+tmpDict = {}
+
+# Chain
+tmpDict['rootname'] = ('chain')
+tmpDict['names'] = ('chain1', 'chain2', 'chain3', 'chain4')
+tmpDict['positions'] = ([0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
+tmpDict['jointnames'] = ('jnt_chain1', 'jnt_chain2', 'jnt_chain3', 'jnt_chain4')
+tmpDict['pjntnames'] = (['pjnt_chain1', 'pjnt_chain1End'], ['pjnt_chain2', 'pjnt_chain2End'], ['pjnt_chain3', 'pjnt_chain3End'], ['pjnt_chain4', 'pjnt_chain4End'])
+tmpDict['fkcontrols'] = ('ctrl_s_chain1', 'ctrl_s_chain2', 'ctrl_s_chain3', 'ctrl_s_chain4')
+tmpDict['partcontrols'] = (['pctrl_s_chain1', 'pctrl_s_chain1End'], ['pctrl_s_chain2', 'pctrl_s_chain2End'], ['pctrl_s_chain3', 'pctrl_s_chain3End'], ['pctrl_s_chain4', 'pctrl_s_chain4End'])
+tmpDict['ikcontrol'] = (['ctrl_s_chain'])
+tmpDict['setcontrol'] = ('ctrl_chain_s_settings')
+tmpDict['jntorient'] = ('xyz', 'yup') 
+tmpDict['ctrlro'] = ('xyz') 
+partInfo['chain'] = tmpDict
+tmpDict = {}
 
 # Write to the file
 utils_json.writeJson(filename, partInfo)

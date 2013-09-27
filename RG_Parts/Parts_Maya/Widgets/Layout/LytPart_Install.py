@@ -3,10 +3,12 @@ import json
 import tempfile
 import Utils.Utils_JSON as utils_json
 reload(utils_json)
+import time
 
 def install(part, dm, ns, *args):
     # NOTE:  I do a bunch of renaming that should be done by editing the dict entries
     # List to hold pcontrols
+    start = time.time()
     pctrls = []
     pjntList = []
     partNodes = []
@@ -29,6 +31,7 @@ def install(part, dm, ns, *args):
     data = utils_json.readJson(filename)
     info = json.loads( data )
     partInfo = info[part]
+    print partInfo
     """
     for key, value in partInfo.iteritems() :
         print key, value
@@ -41,19 +44,19 @@ def install(part, dm, ns, *args):
     ctrlGrp = cmds.group(n='grp_'+ ctrlName)
     
 
-    for n in range(len(partInfo['names'])):       
+    for n in range(len(partInfo['names'])):   
         # New namespace
         #cmds.namespace(add=partInfo['partnames'][n])
         # Create the joints
-        try:
-            cmds.select(d=True)
-            pjntRootName = partInfo['pjntnames'][n][0]
-            pjntEndName = partInfo['pjntnames'][n][1]
-            pjntRoot = cmds.joint(n=pjntRootName, p=partInfo['positions'][n])
-            pjntEnd = cmds.joint(n=pjntEndName, p=partInfo['positions'][n+1])
-            pjntList.append(pjntRoot)
-            pjntList.append(pjntEnd)
-        except: pass
+        
+        cmds.select(d=True)
+        pjntRootName = partInfo['pjntnames'][n][0]
+        pjntEndName = partInfo['pjntnames'][n][1]
+        pjntRoot = cmds.joint(n=pjntRootName, p=partInfo['positions'][n])
+        pjntEnd = cmds.joint(n=pjntEndName, p=partInfo['positions'][n+1])
+        pjntList.append(pjntRoot)
+        pjntList.append(pjntEnd)
+        
         
         if n == 0:
             tmpConstraint = cmds.parentConstraint(pjntRoot, ctrlGrp, mo=False)
@@ -68,7 +71,7 @@ def install(part, dm, ns, *args):
         suffix = partInfo['names'][n]
         
         # Create ik
-        ikH = cmds.ikHandle(n='ikh_'+ dm + suffix, sj=pjntRoot, ee=pjntEnd, sol="ikRPsolver")
+        ikH = cmds.ikHandle(n='ikh_'+ dm + suffix, sj=pjntRoot, ee=pjntEnd, s='sticky', sol="ikRPsolver")
         hideList.append(ikH[0]) 
         
         # Stretch ----------------------------------------------------------
@@ -127,32 +130,48 @@ def install(part, dm, ns, *args):
         
         # If more than on layout object, parent them in a chain
         plen = len(partInfo['names'])
-        cmds.parentConstraint(pctrls[n][0], pjntRoot, mo=True)
+        cmds.pointConstraint(pctrls[n][0], pjntRoot, mo=True)
         if n > 0 and n < plen:
             cmds.parentConstraint(pctrls[n][0], pctrls[n-1][1], mo=True)
-            cmds.parentConstraint(pctrls[n][0], pjntRoot, mo=True)
+            cmds.pointConstraint(pctrls[n][0], pjntRoot, mo=True)
         if n < plen:
             hideList.append(pctrls[n-1][1])
             
         # Hide and lock nodes
         # NOTE: Getting double nodes
+
     for each in hideList:
         try:
             cmds.setAttr(each + '.visibility', 0, l=True)
         except: pass
         partNodes.append(each)
+
     for each in pjntList:
         cmds.setAttr(each + '.overrideEnabled', 1)
         cmds.setAttr(each + '.overrideDisplayType', 1) 
         partNodes.append(each)
+
         
     # Create a container and add stuff
     con = cmds.container(n=ns + 'AST') 
     for each in partNodes:
         cmds.container(con, e=True, an=each, ihb=True, iha=True, inc=True)
 
+    cmds.addAttr(con, shortName='in_link', longName='In_Link', dt='string')
+    cmds.addAttr(con, shortName='out_link', longName='Out_Link', dt='string')
+
     # Reset the namespace to default
     cmds.namespace(set=':')
+
+    # First check to see if a master widget container exists.  If not, create one.
+    MasterWidgetContainerName = 'Master_Widget_Container'
+    if cmds.objExists(MasterWidgetContainerName) == False:
+        masterWidgetContainer = cmds.container(n=MasterWidgetContainerName)
+
+    #cmds.container('Master_Widget_Container', edit=True, addNode=con)# , inc=True, ish=True, ihb=True, iha=True
+
+    end = time.time()
+    print end - start
 
 
 """
