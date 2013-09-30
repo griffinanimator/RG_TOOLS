@@ -37,6 +37,8 @@ class Create_Leg:
         self.jnt_info['fkJnts'] = part_utils.createJoints('fkj_' + instance, jntInfo)
         # Create rig joints
         self.jnt_info['rigJnts'] = part_utils.createJoints('rigj_' + instance, jntInfo)
+        # Create the bind skeleton
+        #self.jnt_info['bindJnts'] = part_utils.createJoints('Bone_' + instance, jntInfo)
         # Handle twist joint creation
 
         # Connect the ik and fk joints to the rig joints
@@ -130,6 +132,7 @@ class Create_Leg:
         cmds.parent(self.jnt_info['rigJnts'][0], plGrp)
         cmds.parent(self.jnt_info['ikJnts'][0], plGrp)
         cmds.parent(self.jnt_info['fkJnts'][0], plGrp)
+        #cmds.parent(self.jnt_info['bindJnts'][0], plGrp)
         cmds.parent(settingsControl[0], plGrp)
         cmds.parent(footControl[0], plGrp)
         cmds.parent(fkControls[0][0], plGrp)

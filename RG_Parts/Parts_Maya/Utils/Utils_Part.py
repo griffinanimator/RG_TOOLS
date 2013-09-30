@@ -568,7 +568,7 @@ def collectPartHeirarchyInfo(*args):
 
 
 def createRigContainer(instance, partData, *args):
-    rigContainerName = ('Rig_Container_' + instance + partData)
+    rigContainerName = (partData+'_'+instance+'Rig_Container')
     rigContainer = cmds.container(n=rigContainerName)
 
     return rigContainer

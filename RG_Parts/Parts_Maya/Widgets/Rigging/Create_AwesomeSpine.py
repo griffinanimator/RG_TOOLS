@@ -33,6 +33,8 @@ class Create_ASpine:
         # Create an ik joint chain
         self.jnt_info['iksJnts'] = part_utils.createJoints('ikSj_' + instance, jntInfo)
         self.jnt_info['ikrJnts'] = part_utils.createJoints('ikRj_' + instance, jntInfo)
+        # Create the bind skeleton
+        #self.jnt_info['bindJnts'] = part_utils.createJoints('Bone_' + instance, jntInfo)
 
         # Add all of the joints to rig_info{}
         for each in self.jnt_info['rigJnts']:
@@ -41,6 +43,8 @@ class Create_ASpine:
             self.tmpRigElements.append(each)
         for each in self.jnt_info['ikrJnts']:
             self.tmpRigElements.append(each)
+        #for each in self.jnt_info['bindJnts']:
+            #self.tmpRigElements.append(each)
 
         spl = len(self.jnt_info['iksJnts']) -1
 

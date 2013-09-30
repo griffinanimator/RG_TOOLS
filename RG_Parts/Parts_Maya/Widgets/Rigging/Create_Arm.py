@@ -36,6 +36,8 @@ class Create_Arm:
         self.jnt_info['fkJnts'] = part_utils.createJoints('fkj_' + instance, jntInfo)
         # Create rig joints
         self.jnt_info['rigJnts'] = part_utils.createJoints('rigj_' + instance, jntInfo)
+        # Create the bind skeleton
+        #self.jnt_info['bindJnts'] = part_utils.createJoints('Bone_' + instance, jntInfo)
         # Handle twist joint creation
 
         # Connect the ik and fk joints to the rig joints

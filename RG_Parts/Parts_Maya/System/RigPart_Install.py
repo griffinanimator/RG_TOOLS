@@ -34,8 +34,6 @@ class RigPart_Install:
             title = mod.TITLE
             description = mod.DESCRIPTION
             classname = mod.CLASS_NAME
-            print title
-            print extractedName
 
             if title == extractedName:
                 part == title

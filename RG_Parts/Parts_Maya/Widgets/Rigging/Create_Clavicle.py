@@ -19,7 +19,6 @@ class Create_Clavicle:
         self.rig_info = {}
 
     def install(self, part_data, namespace, instance, partData, *args):
-        print part_data
         # Collect the first joint from each pjoint key
         jntInfo = []
         for j in range(len(part_data['pjntnames'])):
@@ -31,6 +30,11 @@ class Create_Clavicle:
         self.jnt_info['rigJnts'] = part_utils.createJoints('rigj_', lytObs)
         for each in self.jnt_info['rigJnts']:
             self.tmpRigElements.append(each)
+
+        # Create the bind skeleton
+        #self.jnt_info['bindJnts'] = part_utils.createJoints('Bone_' + instance, jntInfo)
+        #for each in self.jnt_info['bindJnts']:
+            #self.tmpRigElements.append(each)
 
         ctrlAttrs = (['None'])
 

@@ -52,6 +52,11 @@ class Create_Head:
         for each in self.jnt_info['fkJnts']:
             self.tmpRigElements.append(each)
 
+        # Create the bind skeleton
+        #self.jnt_info['bindJnts'] = part_utils.createJoints('Bone_' + instance, jntInfo)
+        #for each in self.jnt_info['bindJnts']:
+            #self.tmpRigElements.append(each)
+
         ctrlAttrs = (['follow'])
 
         # Create controls for the neck and head.

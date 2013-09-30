@@ -16,14 +16,61 @@ filename = 'Z:/RG_Parts/Parts_Maya/Widgets/Layout/Layout_Defs_New.json'
 
 data = utils_json.readJson(filename)
 info = json.loads( data )
+makeConnections()
+def makeConnections(*args):
+    connection_info = {}
+    data = utils_json.readJson(outfile)
+    info = json.loads( data )
+    # This itterates through the dictionary to see if a link exists
+    for key, value in info.iteritems():
+        inLink = value['links'][0]
+        asset = value['links'][1]
+        # If a link exists we need to find coresponding joint and control
+        if value['links'][0] != None:
+            ns = inLink.partition(':')
+            namespace = ns[0] + ns[1]
+        if value['links'][1] != None:
+            pinfo = info[asset]
+            
+            for i in range(len(pinfo['partcontrols'])):
+                pjnt = inLink.partition(':')[2]
+                if pjnt in pinfo['partcontrols'][i]:
+                    index = i 
+            pinfo = info[asset]
+            linkControl = pinfo['fkcontrols'][index] 
+            linkJnt = pinfo['jointnames'][index]
+            print linkControl
+            print linkJnt  
+        
+            # NOTE:  All of that previous shit seems error prone and difficult.  Find a new way.
+            # Find the Part_Link  
+            rigcontainer = value['rigcontainer']
+            partLink = rigcontainer.replace('Rig_Container', 'Part_Link')  
+            
+            rootJnt = value['jointnames'][index] 
+                    
+            connection_info['jnts'] = ([linkControl, partLink])
+            connection_info['ctrl'] = ([linkJnt, rootJnt]) 
+    print connection_info   
+        
+""" 
+for key in info.keys():
+   print "key: %s , value: %s" % (key,info[key])          
+"""
+
+        
+
+    
+    
 
 def generateGameSkel(*args):
     data = utils_json.readJson(outfile)
     info = json.loads( data )
 
     jntDataList = []
-    cmds.select(d=True)
+    
     for key, value in info.iteritems():
+        cmds.select(d=True)
         for j in range(len(value['jointnames'])):
             cmds.joint(name=value['jointnames'][j], p=value['positions'][j])
 
@@ -57,8 +104,11 @@ def collectAST_Info(*args):
         namespace = tns[0]+tns[1]  # Arm_L_01_:
         part = namespace.partition('_')[0] # Arm
         basename = namespace.replace(':', '')
-       
+        dm = ('_' + basename.partition('_')[2])
+      
         partInfo = info[part]
+
+        rigcontainername = 'Rig_Container' + dm + partInfo['rootname']
 
         # NOTE:  Some of the original JSON info like position, may have been changed
         """ Collect these keys...
@@ -79,13 +129,20 @@ def collectAST_Info(*args):
         tmpDict['jntorient'] = partInfo['jntorient']
         #tmpDict['positions'] = partInfo['positions']
         tmpDict['pjntnames'] = partInfo['pjntnames']
-        tmpDict['jointnames'] = partInfo['jointnames']
+        #tmpDict['jointnames'] = partInfo['jointnames']
+        jointNameList = []
+        for j in partInfo['jointnames']:
+            newName = j.replace('_', dm)
+            jointNameList.append(newName)
+
+        tmpDict['jointnames'] = jointNameList
         tmpDict['setcontrol'] = partInfo['setcontrol']
         tmpDict['rootname'] = partInfo['rootname']
         tmpDict['names'] = partInfo['names']
         tmpDict['ctrlro'] = partInfo['ctrlro']
         tmpDict['ikcontrol'] = partInfo['ikcontrol']
         tmpDict['namespace'] =  namespace
+        tmpDict['rigcontainer'] =  rigcontainername
         jntPosList = []
         for p in range(len(partInfo['pjntnames'])):
             jntRoot = namespace+partInfo['pjntnames'][p][0]
@@ -100,11 +157,14 @@ def collectAST_Info(*args):
         il = cmds.getAttr(a + '.in_link')
         ol =cmds.getAttr(a + '.out_link')
         tmpDict['links']=[il, ol]
-        
+        print a
         charDef[a]=tmpDict
+        
     # Write to the file
     utils_json.writeJson(outfile, charDef)
         
 collectAST_Info()
 #generateGameSkel()
 rigIt()
+generateGameSkel()
+makeConnections()

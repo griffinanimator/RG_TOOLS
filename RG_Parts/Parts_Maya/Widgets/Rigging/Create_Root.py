@@ -48,6 +48,10 @@ class Create_Root:
         for each in self.jnt_info['rigJnts']:
             self.tmpRigElements.append(each)
 
+        #self.jnt_info['bindJnts'] = part_utils.createJoints('Bone_', lytObs)
+        #for each in self.jnt_info['bindJnts']:
+            #self.tmpRigElements.append(each)
+
         # NOTE:  This works but it isn't slick
         newAnName = self.jnt_info['rigJnts'][0].replace('_Root', '_ANIM')
         cmds.rename(self.jnt_info['rigJnts'][0], newAnName)

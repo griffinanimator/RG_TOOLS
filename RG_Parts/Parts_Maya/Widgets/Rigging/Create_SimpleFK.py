@@ -33,6 +33,10 @@ class Create_SimpleFK:
         for each in self.jnt_info['rigJnts']:
             self.tmpRigElements.append(each)
 
+        #self.jnt_info['bindJnts'] = part_utils.createJoints('Bone_' + instance, jntInfo)
+        #for each in self.jnt_info['bindJnts']:
+            #self.tmpRigElements.append(each)
+
         ctrlAttrs = (['stretch'])
 
         fkControls = []
