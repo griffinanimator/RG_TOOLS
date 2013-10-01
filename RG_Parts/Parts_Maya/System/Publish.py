@@ -16,9 +16,11 @@ filename = 'Z:/RG_Parts/Parts_Maya/Widgets/Layout/Layout_Defs_New.json'
 
 data = utils_json.readJson(filename)
 info = json.loads( data )
-makeConnections()
-def makeConnections(*args):
+
+def collectConnectionInfo(*args):
     connection_info = {}
+    tmpCtrlList = []
+    tmpJntList = []
     data = utils_json.readJson(outfile)
     info = json.loads( data )
     # This itterates through the dictionary to see if a link exists
@@ -36,32 +38,40 @@ def makeConnections(*args):
                 pjnt = inLink.partition(':')[2]
                 if pjnt in pinfo['partcontrols'][i]:
                     index = i 
+
             pinfo = info[asset]
+            pinfo['fkcontrols']
+            print index
             linkControl = pinfo['fkcontrols'][index] 
             linkJnt = pinfo['jointnames'][index]
-            print linkControl
-            print linkJnt  
-        
+
             # NOTE:  All of that previous shit seems error prone and difficult.  Find a new way.
             # Find the Part_Link  
             rigcontainer = value['rigcontainer']
-            partLink = rigcontainer.replace('Rig_Container', 'Part_Link')  
+            partLink = rigcontainer.replace('Rig_Container', 'Part_Link') 
+
+            rootJnt = value['jointnames'][0] 
             
-            rootJnt = value['jointnames'][index] 
+            tmpJntList.append([linkJnt, rootJnt]) 
+            tmpCtrlList.append([linkControl, partLink])
                     
-            connection_info['jnts'] = ([linkControl, partLink])
-            connection_info['ctrl'] = ([linkJnt, rootJnt]) 
-    print connection_info   
-        
+    connection_info['ctrls'] = tmpCtrlList
+    connection_info['jnts'] = tmpJntList
+    print connection_info
+  
+    return connection_info        
 """ 
 for key in info.keys():
    print "key: %s , value: %s" % (key,info[key])          
-"""
+"""      
 
+def makeConnections(*args):
+    connectionInfo = collectConnectionInfo()
+    for i in range(len(connectionInfo['jnts'])):
+        cmds.parent(connectionInfo['jnts'][i][1],connectionInfo['jnts'][i][0])
+        cmds.parentConstraint(connectionInfo['ctrls'][i][0], connectionInfo['ctrls'][i][1])
         
-
-    
-    
+          
 
 def generateGameSkel(*args):
     data = utils_json.readJson(outfile)
@@ -84,8 +94,7 @@ def rigIt(*args):
         rigpart_install.install(each)
 
         
-    
-
+   
 def collectAST_Info(*args):
     AST_INFO = {}
     astName_list = []
@@ -105,6 +114,7 @@ def collectAST_Info(*args):
         part = namespace.partition('_')[0] # Arm
         basename = namespace.replace(':', '')
         dm = ('_' + basename.partition('_')[2])
+        print dm
       
         partInfo = info[part]
 
@@ -125,7 +135,11 @@ def collectAST_Info(*args):
         'ikcontrol'
         """
         tmpDict['partcontrols'] = partInfo['partcontrols']
-        tmpDict['fkcontrols'] = partInfo['fkcontrols']
+        controlNameList = []
+        for c in partInfo['fkcontrols']:
+            newName = c.replace('_s_', dm)
+            controlNameList.append(newName)
+        tmpDict['fkcontrols'] = controlNameList
         tmpDict['jntorient'] = partInfo['jntorient']
         #tmpDict['positions'] = partInfo['positions']
         tmpDict['pjntnames'] = partInfo['pjntnames']
@@ -154,8 +168,8 @@ def collectAST_Info(*args):
                 jntPosList.append(endPos)
            
         tmpDict['positions']=jntPosList
-        il = cmds.getAttr(a + '.in_link')
-        ol =cmds.getAttr(a + '.out_link')
+        il = cmds.getAttr(a + '.link')
+        ol =cmds.getAttr(a + '.source')
         tmpDict['links']=[il, ol]
         print a
         charDef[a]=tmpDict

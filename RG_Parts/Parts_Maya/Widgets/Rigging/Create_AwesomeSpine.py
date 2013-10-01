@@ -185,6 +185,8 @@ class Create_ASpine:
         ctrlAttrs = []
 
         spineCtrls = []
+
+
         
         """
         spineCtrls contents
@@ -205,7 +207,7 @@ class Create_ASpine:
 
         
         for i in range(len(self.jnt_info['rootJnts'])):
-            ctrlName = part_data['fkcontrols'][i].replace('s_', instance)
+            ctrlName = part_data['fkcontrols'][i+1].replace('s_', instance)
             ctrlPos = cmds.xform(self.jnt_info['rootJnts'][i], q=True, ws=True, t=True)
             # NOTE: Dynamically generate the control objects
             spineControl = part_utils.setupControlObject("FkSpineControl.ma", ctrlName, ctrlAttrs, jntInfo[i][1], jntInfo[i][2], os.environ['Parts_Maya_Controls'])
@@ -214,7 +216,7 @@ class Create_ASpine:
             spineCtrls.append(spineControl)
         
         # Create the mid spine control
-        ctrlName = part_data['fkcontrols'][3].replace('s_', instance)
+        ctrlName = part_data['fkcontrols'][4].replace('s_', instance)
         ctrlPos = cmds.xform(self.jnt_info['rootJnts'][1], q=True, ws=True, t=True)
         spineControl = part_utils.setupControlObject("spineControl.ma", ctrlName, ctrlAttrs, jntInfo[i][1], jntInfo[i][2], os.environ['Parts_Maya_Controls'])
         cmds.parentConstraint(spineControl, self.jnt_info['rootJnts'][1], mo=True)
@@ -230,7 +232,7 @@ class Create_ASpine:
         # Cleanup
         for each in spineCtrls:
             self.tmpRigElements.append(each)
-
+        print spineCtrls
         self.rig_info['rig_info'] = self.tmpRigElements
 
         # Add the rig to a container.
